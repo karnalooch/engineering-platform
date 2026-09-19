@@ -25,6 +25,22 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/reusable-governance.yml
+    with:
+      additional_high_risk_patterns: |
+        scripts/**
+        .gitattributes
+        .gitmodules
+        LICENSE
+        LICENSE.md
+        LICENSE.txt
+        VERSION
+        CHANGELOG.md
+        docs/AGGREGATE_GATE.md
+        docs/CONTRACT.md
+        docs/GOVERNANCE_GUARD.md
+        docs/ROLLOUT.md
+        docs/VERSIONING.md
+        docs/AUTO_MERGE.md
 
   workflow-contract:
     name: Workflow contract
@@ -45,6 +61,11 @@ jobs:
 
       - name: Validate reusable workflow contract
         run: python scripts/ci/validate_platform.py
+
+      - name: Test fail-closed auto-merge policy
+        run: |
+          python -m unittest scripts/ci/test_auto_merge.py -v
+          python -m unittest scripts/ci/test_auto_merge_workflow.py -v
 
   security:
     name: Security baseline
