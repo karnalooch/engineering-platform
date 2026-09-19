@@ -32,7 +32,7 @@ SECURITY.md
 **/app.config.js
 ```
 
-Consumers may add or replace patterns when their application has additional sensitive surfaces.
+Consumers may add extra patterns for application-specific sensitive surfaces. The built-in defaults remain enforced and cannot be removed by a caller.
 
 ## Why high-risk means manual
 
