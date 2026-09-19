@@ -3,23 +3,11 @@ name: Reusable governance guard
 on:
   workflow_call:
     inputs:
-      high_risk_patterns:
-        description: Newline-separated glob patterns that force manual merge.
+      additional_high_risk_patterns:
+        description: Optional newline-separated glob patterns added to the built-in high-risk defaults.
         required: false
         type: string
-        default: |
-          .github/**
-          SECURITY.md
-          **/SECURITY.md
-          **/package.json
-          **/pnpm-lock.yaml
-          **/package-lock.json
-          **/yarn.lock
-          **/pyproject.toml
-          **/requirements*.txt
-          **/Dockerfile*
-          **/eas.json
-          **/app.config.js
+        default: ""
       require_manual_marker_for_high_risk:
         required: false
         type: boolean
@@ -65,7 +53,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PR_BODY: ${{ github.event.pull_request.body || '' }}
-          HIGH_RISK_PATTERNS: ${{ inputs.high_risk_patterns }}
+          ADDITIONAL_HIGH_RISK_PATTERNS: ${{ inputs.additional_high_risk_patterns }}
           REQUIRE_MANUAL_MARKER: ${{ inputs.require_manual_marker_for_high_risk }}
           REQUIRE_AGGREGATE_GATE: ${{ inputs.require_aggregate_gate }}
           ENFORCE_ACTION_PINS: ${{ inputs.enforce_immutable_action_pins }}
@@ -124,11 +112,14 @@ jobs:
                       for line in git("diff", "--name-only", base, head).splitlines()
                       if line.strip()
                   ]
-                  patterns = [
+                  patterns = list(DEFAULT_HIGH_RISK_PATTERNS)
+                  patterns.extend(
                       line.strip()
-                      for line in os.environ.get("HIGH_RISK_PATTERNS", "").splitlines()
+                      for line in os.environ.get(
+                          "ADDITIONAL_HIGH_RISK_PATTERNS", ""
+                      ).splitlines()
                       if line.strip()
-                  ]
+                  )
                   for path in changed:
                       if any(fnmatch.fnmatch(path, pattern) for pattern in patterns):
                           high_risk.append(path)
