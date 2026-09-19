@@ -20,6 +20,12 @@ jobs:
       contents: read
     uses: ./.github/workflows/reusable-repo-policy.yml
 
+  governance:
+    name: Governance policy
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-governance.yml
+
   workflow-contract:
     name: Workflow contract
     runs-on: ubuntu-latest
@@ -54,6 +60,7 @@ jobs:
     if: ${{ always() }}
     needs:
       - repo-policy
+      - governance
       - workflow-contract
       - security
     runs-on: ubuntu-latest
@@ -64,6 +71,7 @@ jobs:
         shell: bash
         env:
           REPO_POLICY_RESULT: ${{ needs.repo-policy.result }}
+          GOVERNANCE_RESULT: ${{ needs.governance.result }}
           WORKFLOW_CONTRACT_RESULT: ${{ needs.workflow-contract.result }}
           SECURITY_RESULT: ${{ needs.security.result }}
         run: |
@@ -71,6 +79,7 @@ jobs:
           failed=0
           for entry in \
             "repo-policy=${REPO_POLICY_RESULT}" \
+            "governance=${GOVERNANCE_RESULT}" \
             "workflow-contract=${WORKFLOW_CONTRACT_RESULT}" \
             "security=${SECURITY_RESULT}"
           do

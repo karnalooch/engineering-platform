@@ -10,6 +10,10 @@ ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github" / "workflows"
 IMMUTABLE_SHA = re.compile(r"^[0-9a-f]{40}$")
 USES = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
+FAIL_OPEN = re.compile(
+    r"^\s*continue-on-error:\s*true\s*(?:#.*)?$",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def main() -> int:
@@ -25,7 +29,7 @@ def main() -> int:
         if "permissions:" not in text:
             problems.append(f"{path.relative_to(ROOT)}: missing explicit permissions")
 
-        if "continue-on-error: true" in text.lower():
+        if FAIL_OPEN.search(text):
             problems.append(
                 f"{path.relative_to(ROOT)}: fail-open continue-on-error is forbidden"
             )
@@ -37,7 +41,7 @@ def main() -> int:
 
         for match in USES.finditer(text):
             target = match.group(1)
-            if target.startswith("./"):
+            if target.startswith("./") or target.startswith("docker://"):
                 continue
             if "@" not in target:
                 problems.append(
