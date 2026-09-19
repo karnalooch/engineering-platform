@@ -20,6 +20,23 @@ jobs:
       contents: read
     uses: ./.github/workflows/reusable-repo-policy.yml
 
+  risk-policy:
+    name: PR risk policy
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-risk-policy.yml
+
+  consumer-contract:
+    name: Consumer contract
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-consumer-contract.yml
+    with:
+      require_platform_ref: false
+      require_single_platform_sha: true
+      require_aggregate_gate: true
+      require_external_action_sha: true
+
   workflow-contract:
     name: Workflow contract
     runs-on: ubuntu-latest
@@ -54,6 +71,8 @@ jobs:
     if: ${{ always() }}
     needs:
       - repo-policy
+      - risk-policy
+      - consumer-contract
       - workflow-contract
       - security
     runs-on: ubuntu-latest
@@ -64,6 +83,8 @@ jobs:
         shell: bash
         env:
           REPO_POLICY_RESULT: ${{ needs.repo-policy.result }}
+          RISK_POLICY_RESULT: ${{ needs.risk-policy.result }}
+          CONSUMER_CONTRACT_RESULT: ${{ needs.consumer-contract.result }}
           WORKFLOW_CONTRACT_RESULT: ${{ needs.workflow-contract.result }}
           SECURITY_RESULT: ${{ needs.security.result }}
         run: |
@@ -71,6 +92,8 @@ jobs:
           failed=0
           for entry in \
             "repo-policy=${REPO_POLICY_RESULT}" \
+            "risk-policy=${RISK_POLICY_RESULT}" \
+            "consumer-contract=${CONSUMER_CONTRACT_RESULT}" \
             "workflow-contract=${WORKFLOW_CONTRACT_RESULT}" \
             "security=${SECURITY_RESULT}"
           do
