@@ -45,7 +45,7 @@ An eligible PR is merged only when all of these are true:
 - at least one same-repository Issue is linked with a closing relationship;
 - GitHub reports the exact current head SHA as cleanly mergeable.
 
-The merge uses squash and passes the reviewed head SHA to the GitHub merge API.
+Immediately before the write, the controller re-reads the PR body/state, head SHA, base SHA, required checks, review state, unresolved threads, closing-Issue set and mergeability. The merge uses squash and passes the reviewed head SHA to the GitHub merge API.
 
 ## High-risk paths
 
@@ -58,6 +58,7 @@ VERSION
 CHANGELOG.md
 SECURITY.md
 docs/AGGREGATE_GATE.md
+docs/AUTO_MERGE.md
 docs/CONTRACT.md
 docs/GOVERNANCE_GUARD.md
 docs/ROLLOUT.md
