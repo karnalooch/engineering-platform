@@ -10,6 +10,14 @@ Closes #
 - [ ] Backward-compatible caller change
 - [ ] Breaking caller change
 
+## Risk
+
+Risk: high
+
+Platform/CI/security/governance changes are treated as high risk by default.
+If this PR is truly docs-only, the automated classifier may report normal risk;
+overstating risk is allowed, understating it is not.
+
 ## Verification
 
 - [ ] Self-CI executes the changed workflow/policy path
