@@ -27,13 +27,18 @@ REQUIRED_CHECKS = (
 
 RISKY_PREFIXES = (
     ".github/",
-    "scripts/ci/",
+    "scripts/",
 )
 
 RISKY_EXACT = {
     "VERSION",
     "CHANGELOG.md",
     "SECURITY.md",
+    ".gitattributes",
+    ".gitmodules",
+    "LICENSE",
+    "LICENSE.md",
+    "LICENSE.txt",
     "pyproject.toml",
     "package.json",
     "pnpm-lock.yaml",
