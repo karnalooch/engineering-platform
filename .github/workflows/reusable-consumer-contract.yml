@@ -1,0 +1,175 @@
+name: Reusable consumer contract
+
+on:
+  workflow_call:
+    inputs:
+      require_platform_ref:
+        description: Require at least one immutable engineering-platform reference.
+        required: false
+        type: boolean
+        default: true
+      require_single_platform_sha:
+        description: Require all engineering-platform workflow calls to use one SHA.
+        required: false
+        type: boolean
+        default: true
+      require_aggregate_gate:
+        description: Require an exact local Aggregate CI gate.
+        required: false
+        type: boolean
+        default: true
+      require_external_action_sha:
+        description: Require non-local GitHub Action refs to use immutable 40-char SHAs.
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      platform_sha:
+        description: The single detected engineering-platform SHA, when present.
+        value: ${{ jobs.consumer-contract.outputs.platform_sha }}
+
+permissions: {}
+
+jobs:
+  consumer-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      platform_sha: ${{ steps.validate.outputs.platform_sha }}
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Validate immutable platform and fail-closed workflow contract
+        id: validate
+        shell: bash
+        env:
+          REQUIRE_PLATFORM_REF: ${{ inputs.require_platform_ref }}
+          REQUIRE_SINGLE_PLATFORM_SHA: ${{ inputs.require_single_platform_sha }}
+          REQUIRE_AGGREGATE_GATE: ${{ inputs.require_aggregate_gate }}
+          REQUIRE_EXTERNAL_ACTION_SHA: ${{ inputs.require_external_action_sha }}
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          root = Path(".")
+          workflow_dir = root / ".github" / "workflows"
+          workflows = sorted(
+              [*workflow_dir.glob("*.yml"), *workflow_dir.glob("*.yaml")]
+          )
+
+          sha40 = re.compile(r"^[0-9a-f]{40}$")
+          uses_re = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
+          platform_prefix = "karnalooch/engineering-platform/"
+
+          problems: list[str] = []
+          platform_shas: set[str] = set()
+          aggregate_files: list[Path] = []
+
+          def enabled(name: str) -> bool:
+              return os.environ[name].lower() == "true"
+
+          if not workflows:
+              problems.append("no GitHub Actions workflow files discovered")
+
+          for path in workflows:
+              text = path.read_text(encoding="utf-8")
+
+              if "continue-on-error: true" in text.lower():
+                  problems.append(
+                      f"{path}: fail-open 'continue-on-error: true' is forbidden"
+                  )
+
+              if re.search(
+                  r"(?m)^\s*name:\s*['\"]?Aggregate CI gate['\"]?\s*$",
+                  text,
+              ):
+                  aggregate_files.append(path)
+                  if not re.search(
+                      r"(?m)^\s*if:\s*\$\{\{\s*always\(\)\s*\}\}\s*$",
+                      text,
+                  ):
+                      problems.append(
+                          f"{path}: Aggregate CI gate must use if: ${{{{ always() }}}}"
+                      )
+
+              for match in uses_re.finditer(text):
+                  target = match.group(1)
+                  if target.startswith("./"):
+                      continue
+
+                  if target.startswith(platform_prefix):
+                      if "@" not in target:
+                          problems.append(
+                              f"{path}: engineering-platform call lacks a ref: {target}"
+                          )
+                          continue
+                      _, ref = target.rsplit("@", 1)
+                      if not sha40.fullmatch(ref):
+                          problems.append(
+                              f"{path}: engineering-platform must be pinned to a "
+                              f"40-char immutable SHA, got: {target}"
+                          )
+                      else:
+                          platform_shas.add(ref)
+
+                  if enabled("REQUIRE_EXTERNAL_ACTION_SHA"):
+                      if target.startswith("docker://"):
+                          problems.append(
+                              f"{path}: docker:// action is not allowed by the "
+                              "immutable GitHub Action SHA policy"
+                          )
+                          continue
+                      if "@" not in target:
+                          problems.append(
+                              f"{path}: external action lacks a ref: {target}"
+                          )
+                          continue
+                      _, ref = target.rsplit("@", 1)
+                      if not sha40.fullmatch(ref):
+                          problems.append(
+                              f"{path}: external action is not pinned to an "
+                              f"immutable 40-char SHA: {target}"
+                          )
+
+          if enabled("REQUIRE_PLATFORM_REF") and not platform_shas:
+              problems.append(
+                  "no immutable karnalooch/engineering-platform workflow ref found"
+              )
+
+          if enabled("REQUIRE_SINGLE_PLATFORM_SHA") and len(platform_shas) > 1:
+              problems.append(
+                  "consumer mixes engineering-platform versions: "
+                  + ", ".join(sorted(platform_shas))
+              )
+
+          if enabled("REQUIRE_AGGREGATE_GATE") and len(aggregate_files) != 1:
+              problems.append(
+                  "expected exactly one workflow containing exact "
+                  f"'Aggregate CI gate'; found {len(aggregate_files)}"
+              )
+
+          detected = next(iter(platform_shas), "")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"platform_sha={detected}\n")
+
+          if problems:
+              print("consumer contract: FAIL", file=sys.stderr)
+              for problem in problems:
+                  print(f"  - {problem}", file=sys.stderr)
+              raise SystemExit(1)
+
+          print(
+              "consumer contract: PASS "
+              f"(platform_sha={detected or 'none'}, workflows={len(workflows)})"
+          )
+          PY
