@@ -36,7 +36,7 @@ Planned in PR #9.
 - make baseline governance non-disableable by caller input;
 - improve structural platform validation to avoid false positives in embedded scripts.
 
-Canonical consumer SHA: assigned from the PR #9 squash-merge commit after merge.
+Canonical commit: `a4c0f579aa10b495835dca3f78f84a79538392cf`.
 
 ## 0.1.0
 
