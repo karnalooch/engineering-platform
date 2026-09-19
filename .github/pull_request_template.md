@@ -23,4 +23,9 @@ Closes #
 
 Auto-merge: manual
 
-Platform/CI/security/governance changes remain manual-merge.
+Default is manual.
+
+Only a demonstrably low-risk PR may replace the marker above with exactly
+`Auto-merge: eligible`. CI/security/governance/versioning/dependency/toolchain
+and other high-risk paths remain manual and the trusted auto-merge controller
+independently re-checks eligibility.
