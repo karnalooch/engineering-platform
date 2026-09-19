@@ -56,7 +56,7 @@ class AutoMergeWorkflowContractTests(unittest.TestCase):
     def test_external_actions_are_immutable_sha_pinned(self):
         self.assertIn(
             "actions/checkout@"
-            "d23441a48e516b6c34aea4fa41551a30e30af803",
+            "3d3c42e5aac5ba805825da76410c181273ba90b1",
             self.text,
         )
         self.assertIn(
