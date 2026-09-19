@@ -99,3 +99,14 @@ Governance changes are rolled out platform-first:
 5. incremental 4VELO adoption.
 
 No governance/platform/security PR is auto-merged.
+
+## Auto-merge interaction
+
+The reusable Governance Guard and the repository-local privileged auto-merge controller are separate layers.
+
+- Governance classifies high-risk PRs and requires `Auto-merge: manual`.
+- The privileged controller runs only trusted code from the default branch and independently rejects its own high-risk path set.
+- A passing Governance check is necessary but never sufficient for auto-merge.
+- The controller also requires the local `Aggregate CI gate`, clean review state, a closing Issue and exact clean mergeability.
+
+See `docs/AUTO_MERGE.md`.
