@@ -8,26 +8,6 @@ on:
         required: false
         type: string
         default: ""
-      require_manual_marker_for_high_risk:
-        required: false
-        type: boolean
-        default: true
-      require_aggregate_gate:
-        required: false
-        type: boolean
-        default: true
-      enforce_immutable_action_pins:
-        required: false
-        type: boolean
-        default: true
-      enforce_platform_sha_pins:
-        required: false
-        type: boolean
-        default: true
-      platform_repository:
-        required: false
-        type: string
-        default: karnalooch/engineering-platform
 
 permissions: {}
 
@@ -54,11 +34,6 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PR_BODY: ${{ github.event.pull_request.body || '' }}
           ADDITIONAL_HIGH_RISK_PATTERNS: ${{ inputs.additional_high_risk_patterns }}
-          REQUIRE_MANUAL_MARKER: ${{ inputs.require_manual_marker_for_high_risk }}
-          REQUIRE_AGGREGATE_GATE: ${{ inputs.require_aggregate_gate }}
-          ENFORCE_ACTION_PINS: ${{ inputs.enforce_immutable_action_pins }}
-          ENFORCE_PLATFORM_PINS: ${{ inputs.enforce_platform_sha_pins }}
-          PLATFORM_REPOSITORY: ${{ inputs.platform_repository }}
         run: |
           python - <<'PY'
           from __future__ import annotations
@@ -72,6 +47,7 @@ jobs:
 
           ROOT = Path.cwd()
           WORKFLOW_DIR = ROOT / ".github" / "workflows"
+          PLATFORM_REPOSITORY = "karnalooch/engineering-platform"
 
           SHA40 = re.compile(r"^[0-9a-f]{40}$")
           USES = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
@@ -79,13 +55,15 @@ jobs:
               r"^\s*continue-on-error:\s*true\s*(?:#.*)?$",
               re.IGNORECASE | re.MULTILINE,
           )
+          WRITE_ALL = re.compile(
+              r"^\s*permissions:\s*write-all\s*(?:#.*)?$",
+              re.IGNORECASE | re.MULTILINE,
+          )
           AGGREGATE_NAME = re.compile(
-              r"""^\s*name:\s*["']?Aggregate CI gate["']?\s*(?:#.*)?$""",
-              re.MULTILINE,
+              r"""^\s*name:\s*["']?Aggregate CI gate["']?\s*(?:#.*)?$"""
           )
           AGGREGATE_ALWAYS = re.compile(
-              r"""^\s*if:\s*["']?\$\{\{\s*always\(\)\s*\}\}["']?\s*(?:#.*)?$""",
-              re.MULTILINE,
+              r"""^\s*if:\s*["']?\$\{\{\s*always\(\)\s*\}\}["']?\s*(?:#.*)?$"""
           )
 
           DEFAULT_HIGH_RISK_PATTERNS = (
@@ -124,9 +102,6 @@ jobs:
               "**/app.config.js",
           )
 
-          def as_bool(name: str) -> bool:
-              return os.environ.get(name, "").strip().lower() == "true"
-
           def git(*args: str) -> str:
               result = subprocess.run(
                   ["git", *args],
@@ -139,6 +114,44 @@ jobs:
 
           def matches_any(path: str, patterns: list[str]) -> bool:
               return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
+
+          def leading_spaces(line: str) -> int:
+              return len(line) - len(line.lstrip(" "))
+
+          def has_fail_closed_aggregate(text: str) -> tuple[bool, bool]:
+              lines = text.splitlines()
+              found_name = False
+
+              for index, line in enumerate(lines):
+                  if leading_spaces(line) != 4 or not AGGREGATE_NAME.fullmatch(line):
+                      continue
+
+                  found_name = True
+                  # GitHub workflow structure is top-level jobs -> job id (2 spaces)
+                  # -> job properties (4 spaces). Find the complete job block so an
+                  # unrelated always() elsewhere cannot satisfy this contract.
+                  start = index
+                  while start > 0:
+                      candidate = lines[start - 1]
+                      if candidate.strip() and leading_spaces(candidate) < 4:
+                          break
+                      start -= 1
+
+                  end = index + 1
+                  while end < len(lines):
+                      candidate = lines[end]
+                      if candidate.strip() and leading_spaces(candidate) < 4:
+                          break
+                      end += 1
+
+                  if any(
+                      leading_spaces(candidate) == 4
+                      and AGGREGATE_ALWAYS.fullmatch(candidate)
+                      for candidate in lines[start:end]
+                  ):
+                      return True, True
+
+              return found_name, False
 
           problems: list[str] = []
           notes: list[str] = []
@@ -183,26 +196,19 @@ jobs:
                       notes.append(
                           "high-risk paths: " + ", ".join(sorted(high_risk))
                       )
-
-                      if as_bool("REQUIRE_MANUAL_MARKER"):
-                          body = os.environ.get("PR_BODY", "")
-                          if not re.search(
-                              r"(?im)^\s*Auto-merge:\s*manual\s*$",
-                              body,
-                          ):
-                              problems.append(
-                                  "high-risk PR must contain exactly "
-                                  "'Auto-merge: manual' in the PR body"
-                              )
+                      body = os.environ.get("PR_BODY", "")
+                      if not re.search(
+                          r"(?im)^\s*Auto-merge:\s*manual\s*$",
+                          body,
+                      ):
+                          problems.append(
+                              "high-risk PR must contain exactly "
+                              "'Auto-merge: manual' in the PR body"
+                          )
                   else:
                       notes.append("risk classification: normal")
 
-          # 2. Enforce immutable workflow/action refs and fail-closed workflow policy.
-          platform_repo = os.environ.get(
-              "PLATFORM_REPOSITORY",
-              "karnalooch/engineering-platform",
-          )
-
+          # 2. Enforce immutable refs and fail-closed workflow policy.
           for path in workflow_files:
               text = path.read_text(encoding="utf-8")
 
@@ -210,6 +216,11 @@ jobs:
                   problems.append(
                       f"{path.relative_to(ROOT)}: "
                       "fail-open continue-on-error is forbidden"
+                  )
+
+              if WRITE_ALL.search(text):
+                  problems.append(
+                      f"{path.relative_to(ROOT)}: permissions: write-all is forbidden"
                   )
 
               for match in USES.finditer(text):
@@ -228,8 +239,7 @@ jobs:
                   owner_path, ref = target.rsplit("@", 1)
 
                   if (
-                      as_bool("ENFORCE_PLATFORM_PINS")
-                      and owner_path.startswith(platform_repo + "/")
+                      owner_path.startswith(PLATFORM_REPOSITORY + "/")
                       and not SHA40.fullmatch(ref)
                   ):
                       problems.append(
@@ -237,33 +247,33 @@ jobs:
                           f"consumer ref must be a full 40-char SHA: {target}"
                       )
 
-                  if as_bool("ENFORCE_ACTION_PINS") and not SHA40.fullmatch(ref):
+                  if not SHA40.fullmatch(ref):
                       problems.append(
                           f"{path.relative_to(ROOT)}: external action/workflow "
                           f"must be pinned to a full 40-char SHA: {target}"
                       )
 
           # 3. Preserve a real caller-local aggregate boundary.
-          if as_bool("REQUIRE_AGGREGATE_GATE"):
-              aggregate_files: list[tuple[Path, str]] = []
+          aggregate_name_found = False
+          aggregate_fail_closed = False
 
-              for workflow_path in workflow_files:
-                  workflow_text = workflow_path.read_text(encoding="utf-8")
-                  if AGGREGATE_NAME.search(workflow_text):
-                      aggregate_files.append((workflow_path, workflow_text))
+          for workflow_path in workflow_files:
+              found_name, fail_closed = has_fail_closed_aggregate(
+                  workflow_path.read_text(encoding="utf-8")
+              )
+              aggregate_name_found = aggregate_name_found or found_name
+              aggregate_fail_closed = aggregate_fail_closed or fail_closed
 
-              if not aggregate_files:
-                  problems.append(
-                      "required local check 'Aggregate CI gate' was not found"
-                  )
-              elif not any(
-                  AGGREGATE_ALWAYS.search(workflow_text)
-                  for _, workflow_text in aggregate_files
-              ):
-                  problems.append(
-                      "the workflow containing 'Aggregate CI gate' must include "
-                      "an always() fail-closed path"
-                  )
+          if not aggregate_name_found:
+              problems.append(
+                  "required local check 'Aggregate CI gate' was not found "
+                  "as a job name"
+              )
+          elif not aggregate_fail_closed:
+              problems.append(
+                  "the Aggregate CI gate job must include "
+                  "if: ${{ always() }} at job-property indentation"
+              )
 
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           lines = ["## Governance guard", ""]
