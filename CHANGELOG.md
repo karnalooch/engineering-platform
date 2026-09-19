@@ -2,6 +2,24 @@
 
 All notable engineering-platform contract changes are recorded here.
 
+## 0.3.0
+
+Planned in issue #10.
+
+- add trusted-default-branch fail-closed auto-merge controller;
+- require explicit `Auto-merge: eligible` opt-in;
+- independently classify high-risk paths from trusted `main` code;
+- require exact green `Aggregate CI gate` and `Governance policy / Governance guard` checks;
+- block Draft/fork/non-owner/high-risk/unresolved/changes-requested/unlinked/unknown-mergeability pull requests;
+- update behind branches but wait for fresh checks before reconsidering merge;
+- require a same-repository closing Issue;
+- merge only by squash with the exact reviewed head SHA;
+- run hourly reconciliation for safe retry after review-thread resolution;
+- self-test auto-merge policy and privileged-workflow safety inside platform CI.
+
+Canonical consumer SHA: assigned from the v0.3.0 squash-merge commit after merge.
+
+
 ## 0.2.0
 
 Planned in PR #9.
