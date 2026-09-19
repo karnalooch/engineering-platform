@@ -272,7 +272,7 @@ jobs:
           elif not aggregate_fail_closed:
               problems.append(
                   "the Aggregate CI gate job must include "
-                  "if: ${{ always() }} at job-property indentation"
+                  "a job-level always() condition at aggregate job-property indentation"
               )
 
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
