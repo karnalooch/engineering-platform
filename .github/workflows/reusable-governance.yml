@@ -72,9 +72,57 @@ jobs:
 
           ROOT = Path.cwd()
           WORKFLOW_DIR = ROOT / ".github" / "workflows"
+
           SHA40 = re.compile(r"^[0-9a-f]{40}$")
           USES = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
-          FAIL_OPEN = re.compile(r"^\s*continue-on-error:\s*true\s*(?:#.*)?$", re.I | re.M)
+          FAIL_OPEN = re.compile(
+              r"^\s*continue-on-error:\s*true\s*(?:#.*)?$",
+              re.IGNORECASE | re.MULTILINE,
+          )
+          AGGREGATE_NAME = re.compile(
+              r"""^\s*name:\s*["']?Aggregate CI gate["']?\s*(?:#.*)?$""",
+              re.MULTILINE,
+          )
+          AGGREGATE_ALWAYS = re.compile(
+              r"""^\s*if:\s*["']?\$\{\{\s*always\(\)\s*\}\}["']?\s*(?:#.*)?$""",
+              re.MULTILINE,
+          )
+
+          DEFAULT_HIGH_RISK_PATTERNS = (
+              ".github/**",
+              "SECURITY.md",
+              "**/SECURITY.md",
+              "package.json",
+              "**/package.json",
+              "pnpm-lock.yaml",
+              "**/pnpm-lock.yaml",
+              "package-lock.json",
+              "**/package-lock.json",
+              "yarn.lock",
+              "**/yarn.lock",
+              "pnpm-workspace.yaml",
+              "**/pnpm-workspace.yaml",
+              "pyproject.toml",
+              "**/pyproject.toml",
+              "requirements*.txt",
+              "**/requirements*.txt",
+              "Dockerfile*",
+              "**/Dockerfile*",
+              "docker-compose*.yml",
+              "**/docker-compose*.yml",
+              "compose*.yml",
+              "**/compose*.yml",
+              ".nvmrc",
+              ".node-version",
+              ".python-version",
+              "**/.nvmrc",
+              "**/.node-version",
+              "**/.python-version",
+              "eas.json",
+              "**/eas.json",
+              "app.config.js",
+              "**/app.config.js",
+          )
 
           def as_bool(name: str) -> bool:
               return os.environ.get(name, "").strip().lower() == "true"
@@ -89,6 +137,9 @@ jobs:
               )
               return result.stdout
 
+          def matches_any(path: str, patterns: list[str]) -> bool:
+              return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
+
           problems: list[str] = []
           notes: list[str] = []
           workflow_files = sorted(
@@ -98,12 +149,14 @@ jobs:
           if not workflow_files:
               problems.append("no GitHub Actions workflow files discovered")
 
-          # 1. Pull-request risk classification from the actual diff.
+          # 1. Classify pull-request risk from the actual changed paths.
           changed: list[str] = []
           high_risk: list[str] = []
+
           if os.environ.get("EVENT_NAME") == "pull_request":
               base = os.environ.get("BASE_SHA", "").strip()
               head = os.environ.get("HEAD_SHA", "").strip()
+
               if not base or not head:
                   problems.append("pull request event is missing base/head SHA")
               else:
@@ -112,6 +165,7 @@ jobs:
                       for line in git("diff", "--name-only", base, head).splitlines()
                       if line.strip()
                   ]
+
                   patterns = list(DEFAULT_HIGH_RISK_PATTERNS)
                   patterns.extend(
                       line.strip()
@@ -120,18 +174,21 @@ jobs:
                       ).splitlines()
                       if line.strip()
                   )
-                  for path in changed:
-                      if any(fnmatch.fnmatch(path, pattern) for pattern in patterns):
-                          high_risk.append(path)
+
+                  high_risk = [
+                      path for path in changed if matches_any(path, patterns)
+                  ]
 
                   if high_risk:
                       notes.append(
                           "high-risk paths: " + ", ".join(sorted(high_risk))
                       )
+
                       if as_bool("REQUIRE_MANUAL_MARKER"):
                           body = os.environ.get("PR_BODY", "")
                           if not re.search(
-                              r"(?im)^\s*Auto-merge:\s*manual\s*$", body
+                              r"(?im)^\s*Auto-merge:\s*manual\s*$",
+                              body,
                           ):
                               problems.append(
                                   "high-risk PR must contain exactly "
@@ -140,9 +197,10 @@ jobs:
                   else:
                       notes.append("risk classification: normal")
 
-          # 2. Workflow safety checks.
+          # 2. Enforce immutable workflow/action refs and fail-closed workflow policy.
           platform_repo = os.environ.get(
-              "PLATFORM_REPOSITORY", "karnalooch/engineering-platform"
+              "PLATFORM_REPOSITORY",
+              "karnalooch/engineering-platform",
           )
 
           for path in workflow_files:
@@ -151,7 +209,7 @@ jobs:
               if FAIL_OPEN.search(text):
                   problems.append(
                       f"{path.relative_to(ROOT)}: "
-                      "continue-on-error: true is forbidden"
+                      "fail-open continue-on-error is forbidden"
                   )
 
               for match in USES.finditer(text):
@@ -185,18 +243,26 @@ jobs:
                           f"must be pinned to a full 40-char SHA: {target}"
                       )
 
-          # 3. Consumer-local aggregate must remain present and fail-closed.
+          # 3. Preserve a real caller-local aggregate boundary.
           if as_bool("REQUIRE_AGGREGATE_GATE"):
-              workflow_text = "\n".join(
-                  p.read_text(encoding="utf-8") for p in workflow_files
-              )
-              if "name: Aggregate CI gate" not in workflow_text:
+              aggregate_files: list[tuple[Path, str]] = []
+
+              for workflow_path in workflow_files:
+                  workflow_text = workflow_path.read_text(encoding="utf-8")
+                  if AGGREGATE_NAME.search(workflow_text):
+                      aggregate_files.append((workflow_path, workflow_text))
+
+              if not aggregate_files:
                   problems.append(
                       "required local check 'Aggregate CI gate' was not found"
                   )
-              if "always()" not in workflow_text:
+              elif not any(
+                  AGGREGATE_ALWAYS.search(workflow_text)
+                  for _, workflow_text in aggregate_files
+              ):
                   problems.append(
-                      "aggregate contract requires an always() fail-closed path"
+                      "the workflow containing 'Aggregate CI gate' must include "
+                      "an always() fail-closed path"
                   )
 
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -214,7 +280,10 @@ jobs:
           if problems:
               lines.append("- result: **FAIL**")
               if summary:
-                  Path(summary).write_text("\n".join(lines) + "\n", encoding="utf-8")
+                  Path(summary).write_text(
+                      "\n".join(lines) + "\n",
+                      encoding="utf-8",
+                  )
               print("governance guard: FAIL", file=sys.stderr)
               for problem in problems:
                   print(f"  - {problem}", file=sys.stderr)
@@ -222,7 +291,11 @@ jobs:
 
           lines.append("- result: **PASS**")
           if summary:
-              Path(summary).write_text("\n".join(lines) + "\n", encoding="utf-8")
+              Path(summary).write_text(
+                  "\n".join(lines) + "\n",
+                  encoding="utf-8",
+              )
+
           print("governance guard: PASS")
           for note in notes:
               print(f"  - {note}")
