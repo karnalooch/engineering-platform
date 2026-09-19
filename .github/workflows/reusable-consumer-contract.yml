@@ -99,7 +99,7 @@ jobs:
                       text,
                   ):
                       problems.append(
-                          f"{path}: Aggregate CI gate must use if: ${{{{ always() }}}}"
+                          f"{path}: Aggregate CI gate must use an always() condition"
                       )
 
               for match in uses_re.finditer(text):
