@@ -1,0 +1,123 @@
+name: Reusable repository policy
+
+on:
+  workflow_call:
+    inputs:
+      max_non_lfs_mib:
+        description: Maximum tracked non-LFS blob size in MiB.
+        required: false
+        type: number
+        default: 10
+      required_lfs_extensions:
+        description: Comma-separated lowercase/uppercase extensions including the dot.
+        required: false
+        type: string
+        default: ""
+      forbidden_path_components:
+        description: Comma-separated path components that must never be tracked.
+        required: false
+        type: string
+        default: ""
+
+permissions: {}
+
+jobs:
+  repository-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          lfs: false
+
+      - name: Enforce repository and Git LFS policy
+        shell: bash
+        env:
+          MAX_NON_LFS_MIB: ${{ inputs.max_non_lfs_mib }}
+          REQUIRED_LFS_EXTENSIONS: ${{ inputs.required_lfs_extensions }}
+          FORBIDDEN_PATH_COMPONENTS: ${{ inputs.forbidden_path_components }}
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          import subprocess
+          import sys
+          from pathlib import PurePosixPath
+
+          def git(*args: str) -> str:
+              completed = subprocess.run(
+                  ["git", *args],
+                  check=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  text=True,
+              )
+              return completed.stdout
+
+          tracked_raw = subprocess.run(
+              ["git", "ls-files", "-z"],
+              check=True,
+              stdout=subprocess.PIPE,
+          ).stdout
+          tracked = [
+              item.decode("utf-8")
+              for item in tracked_raw.split(b"\0")
+              if item
+          ]
+
+          max_bytes = int(float(os.environ["MAX_NON_LFS_MIB"]) * 1024 * 1024)
+          lfs_extensions = {
+              item.strip().lower()
+              for item in os.environ["REQUIRED_LFS_EXTENSIONS"].split(",")
+              if item.strip()
+          }
+          forbidden = {
+              item.strip()
+              for item in os.environ["FORBIDDEN_PATH_COMPONENTS"].split(",")
+              if item.strip()
+          }
+
+          problems: list[str] = []
+
+          for path in tracked:
+              pure = PurePosixPath(path)
+              blocked = forbidden.intersection(pure.parts)
+              if blocked:
+                  problems.append(
+                      f"{path}: forbidden tracked path component ({sorted(blocked)[0]})"
+                  )
+
+              attr = git("check-attr", "filter", "--", path).strip()
+              filter_name = (
+                  attr.rsplit(":", maxsplit=1)[-1].strip()
+                  if ":" in attr
+                  else ""
+              )
+
+              suffix = pure.suffix.lower()
+              if suffix in lfs_extensions and filter_name != "lfs":
+                  problems.append(
+                      f"{path}: extension {suffix} must use Git LFS"
+                  )
+
+              size = int(git("cat-file", "-s", f"HEAD:{path}").strip())
+              if size > max_bytes and filter_name != "lfs":
+                  mib = size / (1024 * 1024)
+                  problems.append(
+                      f"{path}: Git blob is {mib:.1f} MiB; "
+                      f"files over {os.environ['MAX_NON_LFS_MIB']} MiB must use Git LFS"
+                  )
+
+          if problems:
+              print("repository policy: FAIL", file=sys.stderr)
+              for problem in problems:
+                  print(f"  - {problem}", file=sys.stderr)
+              raise SystemExit(1)
+
+          print(f"repository policy: PASS ({len(tracked)} tracked files checked)")
+          PY
