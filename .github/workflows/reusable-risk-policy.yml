@@ -16,12 +16,12 @@ on:
     outputs:
       risk_level:
         description: Computed PR risk level.
-        value: ${{ jobs.risk-policy.outputs.risk_level }}
+        value: ${{ jobs.risk_policy.outputs.risk_level }}
 
 permissions: {}
 
 jobs:
-  risk-policy:
+  risk_policy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
