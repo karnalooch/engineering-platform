@@ -5,7 +5,8 @@ The engineering platform follows Semantic Versioning for its human-facing contra
 ## Current lines
 
 - `v0.1.0` — bootstrap baseline; canonical commit `b34fda2ef31bf62e00422f8531202e2cccc3bc73`.
-- `v0.2.0` — governance guard and non-bypassable shared governance baseline introduced by PR #9. The canonical consumer SHA is the squash-merge commit produced when PR #9 lands on `main`.
+- `v0.2.0` — governance guard and non-bypassable shared governance baseline introduced by PR #9; canonical commit `a4c0f579aa10b495835dca3f78f84a79538392cf`.
+- `v0.3.0` — fail-closed risk-aware auto-merge for the platform repository; canonical commit assigned from the manual squash merge of the v0.3.0 release PR.
 
 ## Consumer pinning
 
