@@ -26,12 +26,12 @@ on:
     outputs:
       platform_sha:
         description: The single detected engineering-platform SHA, when present.
-        value: ${{ jobs.consumer-contract.outputs.platform_sha }}
+        value: ${{ jobs.consumer_contract.outputs.platform_sha }}
 
 permissions: {}
 
 jobs:
-  consumer-contract:
+  consumer_contract:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
