@@ -2,6 +2,19 @@
 
 All notable engineering-platform contract changes are recorded here.
 
+## 0.3.1
+
+Planned in issue #17.
+
+- upgrade `actions/setup-python` to v7.0.0 at immutable SHA `5fda3b95a4ea91299a34e894583c3862153e4b97`;
+- upgrade `actions/checkout` to v7.0.1 at immutable SHA `3d3c42e5aac5ba805825da76410c181273ba90b1`;
+- keep privileged auto-merge on trusted default-branch checkout only;
+- update privileged-workflow contract tests for the refreshed action SHAs;
+- no intended reusable workflow caller-interface change.
+
+Canonical consumer SHA: assigned from the v0.3.1 squash-merge commit after merge.
+
+
 ## 0.3.0
 
 Planned in issue #10.
@@ -17,7 +30,7 @@ Planned in issue #10.
 - run hourly reconciliation for safe retry after review-thread resolution;
 - self-test auto-merge policy and privileged-workflow safety inside platform CI.
 
-Canonical consumer SHA: assigned from the v0.3.0 squash-merge commit after merge.
+Canonical commit: `ae76f1b9f38368dc8dd21e5b0dccb36fa748ad4f`.
 
 
 ## 0.2.0
