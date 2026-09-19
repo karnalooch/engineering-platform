@@ -27,7 +27,12 @@ jobs:
     uses: ./.github/workflows/reusable-governance.yml
     with:
       additional_high_risk_patterns: |
-        scripts/ci/**
+        scripts/**
+        .gitattributes
+        .gitmodules
+        LICENSE
+        LICENSE.md
+        LICENSE.txt
         VERSION
         CHANGELOG.md
         docs/AGGREGATE_GATE.md
