@@ -53,7 +53,12 @@ The controller independently blocks auto-merge for:
 
 ```text
 .github/**
-scripts/ci/**
+scripts/**
+.gitattributes
+.gitmodules
+LICENSE
+LICENSE.md
+LICENSE.txt
 VERSION
 CHANGELOG.md
 SECURITY.md
