@@ -23,11 +23,6 @@ on:
         required: false
         type: boolean
         default: false
-    outputs:
-      platform_sha:
-        description: The single detected engineering-platform SHA, when present.
-        value: ${{ jobs.consumer_contract.outputs.platform_sha }}
-
 permissions: {}
 
 jobs:
@@ -36,8 +31,6 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-    outputs:
-      platform_sha: ${{ steps.validate.outputs.platform_sha }}
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -45,7 +38,6 @@ jobs:
           persist-credentials: false
 
       - name: Validate immutable platform and fail-closed workflow contract
-        id: validate
         shell: bash
         env:
           REQUIRE_PLATFORM_REF: ${{ inputs.require_platform_ref }}
