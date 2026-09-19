@@ -19,8 +19,6 @@ jobs:
     permissions:
       contents: read
     uses: karnalooch/engineering-platform/.github/workflows/reusable-governance.yml@<same-reviewed-sha>
-    with:
-      require_aggregate_gate: true
 
   security:
     permissions:
@@ -50,7 +48,10 @@ The reusable governance guard protects process invariants that should not depend
 - immutable external Action/workflow refs;
 - immutable engineering-platform consumer refs;
 - no `continue-on-error: true` fail-open workflow paths;
+- no workflow-level `permissions: write-all`;
 - preservation of a caller-local `Aggregate CI gate`.
+
+These baseline rules are intentionally non-disableable by consumer inputs. Consumers may only add application-specific high-risk path patterns.
 
 See `docs/GOVERNANCE_GUARD.md` for the versioned policy.
 
