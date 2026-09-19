@@ -1,0 +1,148 @@
+name: Reusable security baseline
+
+on:
+  workflow_call:
+    inputs:
+      enable_dependency_review:
+        required: false
+        type: boolean
+        default: true
+      enable_codeql:
+        required: false
+        type: boolean
+        default: true
+      codeql_languages_json:
+        description: JSON array accepted by the CodeQL language matrix.
+        required: false
+        type: string
+        default: '["python"]'
+      enable_trivy:
+        required: false
+        type: boolean
+        default: true
+      enable_sbom:
+        required: false
+        type: boolean
+        default: true
+      dependency_fail_severity:
+        required: false
+        type: string
+        default: high
+      deny_licenses:
+        required: false
+        type: string
+        default: "AGPL-3.0-only, AGPL-3.0-or-later, GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later"
+      trivy_scanners:
+        required: false
+        type: string
+        default: "vuln,secret,misconfig"
+      trivy_severity:
+        required: false
+        type: string
+        default: "HIGH,CRITICAL"
+
+permissions: {}
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    if: ${{ inputs.enable_dependency_review && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Block vulnerable or incompatible new dependencies
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: ${{ inputs.dependency_fail_severity }}
+          license-check: true
+          vulnerability-check: true
+          deny-licenses: ${{ inputs.deny_licenses }}
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    if: ${{ inputs.enable_codeql }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(inputs.codeql_languages_json) }}
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
+        with:
+          category: /language:${{ matrix.language }}
+
+  trivy:
+    name: Trivy filesystem
+    if: ${{ inputs.enable_trivy }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Scan vulnerabilities, secrets and misconfiguration
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: ${{ inputs.trivy_scanners }}
+          severity: ${{ inputs.trivy_severity }}
+          ignore-unfixed: false
+          exit-code: '1'
+          format: table
+
+  sbom:
+    name: Source SBOM
+    if: ${{ inputs.enable_sbom && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Generate CycloneDX SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: cyclonedx
+          output: sbom.cdx.json
+
+      - name: Preserve SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: source-sbom-cyclonedx
+          path: sbom.cdx.json
+          retention-days: 14
+          if-no-files-found: error

@@ -1,0 +1,21 @@
+name: OpenSSF Scorecard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+  schedule:
+    - cron: '23 4 * * 3'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  scorecard:
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+      id-token: write
+    uses: ./.github/workflows/reusable-scorecard.yml

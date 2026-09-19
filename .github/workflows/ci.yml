@@ -1,0 +1,87 @@
+name: Engineering Platform CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: engineering-platform-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  repo-policy:
+    name: Repository policy
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-repo-policy.yml
+
+  workflow-contract:
+    name: Workflow contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.14'
+
+      - name: Validate reusable workflow contract
+        run: python scripts/ci/validate_platform.py
+
+  security:
+    name: Security baseline
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/reusable-security.yml
+    with:
+      codeql_languages_json: '["python"]'
+
+  aggregate:
+    name: Aggregate CI gate
+    if: ${{ always() }}
+    needs:
+      - repo-policy
+      - workflow-contract
+      - security
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Fail closed unless every required job passed
+        shell: bash
+        env:
+          REPO_POLICY_RESULT: ${{ needs.repo-policy.result }}
+          WORKFLOW_CONTRACT_RESULT: ${{ needs.workflow-contract.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+        run: |
+          set -euo pipefail
+          failed=0
+          for entry in \
+            "repo-policy=${REPO_POLICY_RESULT}" \
+            "workflow-contract=${WORKFLOW_CONTRACT_RESULT}" \
+            "security=${SECURITY_RESULT}"
+          do
+            name="${entry%%=*}"
+            result="${entry#*=}"
+            if [ "${result}" != "success" ]; then
+              echo "::error::${name}: expected success, got ${result}"
+              failed=1
+            fi
+          done
+          if [ "${failed}" -ne 0 ]; then
+            exit 1
+          fi
+          echo "aggregate: PASS"
