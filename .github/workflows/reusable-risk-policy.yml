@@ -7,7 +7,7 @@ on:
         description: Comma-separated fnmatch patterns that force high risk.
         required: false
         type: string
-        default: ".github/**,SECURITY.md,**/Dockerfile*,docker-compose*.yml,docker-compose*.yaml,**/package.json,**/pyproject.toml,**/requirements*.txt,**/pnpm-lock.yaml,**/package-lock.json,**/yarn.lock"
+        default: ".github/**,SECURITY.md,Dockerfile*,**/Dockerfile*,docker-compose*.yml,docker-compose*.yaml,package.json,**/package.json,pyproject.toml,**/pyproject.toml,requirements*.txt,**/requirements*.txt,pnpm-lock.yaml,**/pnpm-lock.yaml,package-lock.json,**/package-lock.json,yarn.lock,**/yarn.lock"
       require_explicit_high_risk:
         description: Require the PR body to declare Risk: high when high-risk files changed.
         required: false
