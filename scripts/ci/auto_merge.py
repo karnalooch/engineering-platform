@@ -41,6 +41,7 @@ RISKY_EXACT = {
     "package-lock.json",
     "yarn.lock",
     "docs/AGGREGATE_GATE.md",
+    "docs/AUTO_MERGE.md",
     "docs/CONTRACT.md",
     "docs/GOVERNANCE_GUARD.md",
     "docs/ROLLOUT.md",
@@ -239,6 +240,8 @@ def has_changes_requested(reviews: Iterable[dict[str, Any]]) -> bool:
                 f"review from {login!r} has invalid id"
             ) from exc
         state = str(review.get("state", "")).upper()
+        if state not in {"APPROVED", "CHANGES_REQUESTED"}:
+            continue
         previous = latest_by_reviewer.get(login)
         if previous is None or review_id > previous[0]:
             latest_by_reviewer[login] = (review_id, state)
@@ -484,6 +487,12 @@ def evaluate_pull_request(
         print_block(number, "PR author is not repository owner")
         return "blocked"
 
+    base_sha = str(pr.get("base", {}).get("sha", ""))
+    if not re.fullmatch(r"[0-9a-f]{40}", base_sha):
+        raise AutomationError(
+            f"PR #{number} base SHA is missing or invalid"
+        )
+
     paths = list_changed_files(api, repository, number)
     if not paths:
         print_block(number, "PR has no changed files")
@@ -576,6 +585,119 @@ def evaluate_pull_request(
         )
         return "blocked"
 
+    # Re-read every mutable safety signal immediately before the write.
+    # The merge API also receives the exact reviewed head SHA, so a
+    # synchronize race after this snapshot is rejected server-side.
+    latest_pr, _headers = api.rest(
+        "GET",
+        f"/repos/{repository}/pulls/{number}",
+    )
+    if not isinstance(latest_pr, dict):
+        raise AutomationError(
+            f"PR #{number} final payload is not an object"
+        )
+
+    if auto_merge_mode(latest_pr.get("body")) != "eligible":
+        print_block(
+            number,
+            "merge marker changed during evaluation",
+        )
+        return "blocked"
+    if latest_pr.get("state") != "open" or bool(latest_pr.get("draft")):
+        print_block(
+            number,
+            "PR state changed during evaluation",
+        )
+        return "blocked"
+    if latest_pr.get("base", {}).get("ref") != "main":
+        print_block(
+            number,
+            "base branch changed during evaluation",
+        )
+        return "blocked"
+    if latest_pr.get("head", {}).get("repo", {}).get("full_name") != repository:
+        print_block(
+            number,
+            "head repository changed during evaluation",
+        )
+        return "blocked"
+    if latest_pr.get("user", {}).get("login") != repository_owner:
+        print_block(
+            number,
+            "PR author changed during evaluation",
+        )
+        return "blocked"
+
+    latest_head_sha = str(
+        latest_pr.get("head", {}).get("sha", "")
+    )
+    latest_base_sha = str(
+        latest_pr.get("base", {}).get("sha", "")
+    )
+    if latest_head_sha != head_sha or latest_base_sha != base_sha:
+        print_block(
+            number,
+            "head/base snapshot changed during evaluation",
+        )
+        return "blocked"
+
+    final_missing_checks = missing_required_checks(
+        list_check_runs(api, repository, head_sha)
+    )
+    if final_missing_checks:
+        print_block(
+            number,
+            "required checks changed before merge: "
+            + ", ".join(final_missing_checks),
+        )
+        return "blocked"
+
+    if has_changes_requested(
+        list_reviews(api, repository, number)
+    ):
+        print_block(
+            number,
+            "review state changed to CHANGES_REQUESTED before merge",
+        )
+        return "blocked"
+
+    final_unresolved, final_closing_issues = pull_request_relations(
+        api,
+        owner=repo_owner,
+        name=repo_name,
+        number=number,
+        repository=repository,
+    )
+    if final_unresolved:
+        print_block(
+            number,
+            f"{final_unresolved} unresolved review thread(s) before merge",
+        )
+        return "blocked"
+    if final_closing_issues != closing_issues:
+        print_block(
+            number,
+            "closing Issue set changed during evaluation",
+        )
+        return "blocked"
+
+    if latest_pr.get("mergeable") is not True:
+        print_block(
+            number,
+            f"final GitHub mergeable={latest_pr.get('mergeable')!r}",
+        )
+        return "blocked"
+    final_mergeable_state = str(
+        latest_pr.get("mergeable_state", "unknown")
+    )
+    if final_mergeable_state != "clean":
+        print_block(
+            number,
+            "final mergeable_state="
+            f"{final_mergeable_state!r}, expected 'clean'",
+        )
+        return "blocked"
+
     result, _headers = api.rest(
         "PUT",
         f"/repos/{repository}/pulls/{number}/merge",
@@ -583,7 +705,7 @@ def evaluate_pull_request(
             "sha": head_sha,
             "merge_method": "squash",
             "commit_title": (
-                f"{pr.get('title', '').strip()} (#{number})"
+                f"{latest_pr.get('title', '').strip()} (#{number})"
             ),
         },
     )
