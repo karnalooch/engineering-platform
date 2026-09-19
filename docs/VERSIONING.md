@@ -6,7 +6,8 @@ The engineering platform follows Semantic Versioning for its human-facing contra
 
 - `v0.1.0` — bootstrap baseline; canonical commit `b34fda2ef31bf62e00422f8531202e2cccc3bc73`.
 - `v0.2.0` — governance guard and non-bypassable shared governance baseline introduced by PR #9; canonical commit `a4c0f579aa10b495835dca3f78f84a79538392cf`.
-- `v0.3.0` — fail-closed risk-aware auto-merge for the platform repository; canonical commit assigned from the manual squash merge of the v0.3.0 release PR.
+- `v0.3.0` — fail-closed risk-aware auto-merge for the platform repository; canonical commit `ae76f1b9f38368dc8dd21e5b0dccb36fa748ad4f`.
+- `v0.3.1` — GitHub Actions toolchain refresh (`setup-python` v7.0.0, `checkout` v7.0.1) with no intended caller-interface change; canonical commit assigned from the manual v0.3.1 release merge.
 
 ## Consumer pinning
 
