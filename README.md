@@ -17,6 +17,7 @@ Application code stays in its product repository. This repository contains reusa
 - `.github/workflows/reusable-governance.yml` — PR risk classification, immutable-ref enforcement and fail-closed governance checks.
 - `docs/AGGREGATE_GATE.md` — fail-closed caller-side aggregate pattern.
 - `docs/GOVERNANCE_GUARD.md` — governance and high-risk merge contract.
+- `docs/AUTO_MERGE.md` — trusted, fail-closed low-risk auto-merge contract for this platform repository.
 
 ## Consumer rule
 
@@ -24,4 +25,4 @@ Callers must pin reusable workflows to a reviewed immutable commit SHA. Do **not
 
 The final `Aggregate CI gate` stays local to every consumer so application-specific checks cannot be silently dropped by a shared workflow.
 
-See `docs/CONTRACT.md`, `docs/GOVERNANCE_GUARD.md` and `docs/ROLLOUT.md`.
+See `docs/CONTRACT.md`, `docs/GOVERNANCE_GUARD.md`, `docs/AUTO_MERGE.md` and `docs/ROLLOUT.md`.
