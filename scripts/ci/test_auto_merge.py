@@ -38,6 +38,7 @@ class AutoMergePolicyTests(unittest.TestCase):
             "VERSION",
             "CHANGELOG.md",
             "SECURITY.md",
+            "docs/AUTO_MERGE.md",
             "docs/CONTRACT.md",
             "docs/GOVERNANCE_GUARD.md",
             "docs/VERSIONING.md",
@@ -165,6 +166,24 @@ class AutoMergePolicyTests(unittest.TestCase):
             )
         )
 
+    def test_comment_does_not_clear_changes_requested(self):
+        self.assertTrue(
+            has_changes_requested(
+                [
+                    {
+                        "id": 1,
+                        "state": "CHANGES_REQUESTED",
+                        "user": {"login": "reviewer"},
+                    },
+                    {
+                        "id": 2,
+                        "state": "COMMENTED",
+                        "user": {"login": "reviewer"},
+                    },
+                ]
+            )
+        )
+
     def test_later_approval_clears_old_changes_requested(self):
         self.assertFalse(
             has_changes_requested(
@@ -176,6 +195,11 @@ class AutoMergePolicyTests(unittest.TestCase):
                     },
                     {
                         "id": 2,
+                        "state": "COMMENTED",
+                        "user": {"login": "reviewer"},
+                    },
+                    {
+                        "id": 3,
                         "state": "APPROVED",
                         "user": {"login": "reviewer"},
                     },
@@ -224,6 +248,9 @@ class FakeApi:
         head_repo="karnalooch/engineering-platform",
         body="Auto-merge: eligible",
         head_sha="a" * 40,
+        base_sha="c" * 40,
+        final_body=None,
+        final_base_sha=None,
     ):
         self.paths = paths or ["README.md"]
         self.checks = checks or [
@@ -247,6 +274,10 @@ class FakeApi:
         self.head_repo = head_repo
         self.body = body
         self.head_sha = head_sha
+        self.base_sha = base_sha
+        self.final_body = final_body
+        self.final_base_sha = final_base_sha
+        self.pr_reads = 0
         self.issue_state_reason = "completed"
         self.calls = []
 
@@ -254,13 +285,24 @@ class FakeApi:
         self.calls.append((method, path, payload, query))
 
         if method == "GET" and path.endswith("/pulls/42"):
+            self.pr_reads += 1
+            body = (
+                self.final_body
+                if self.pr_reads > 1 and self.final_body is not None
+                else self.body
+            )
+            base_sha = (
+                self.final_base_sha
+                if self.pr_reads > 1 and self.final_base_sha is not None
+                else self.base_sha
+            )
             return (
                 {
                     "number": 42,
-                    "body": self.body,
+                    "body": body,
                     "state": "open",
                     "draft": False,
-                    "base": {"ref": "main"},
+                    "base": {"ref": "main", "sha": base_sha},
                     "head": {
                         "sha": self.head_sha,
                         "repo": {"full_name": self.head_repo},
@@ -489,6 +531,16 @@ class AutoMergeDecisionTests(unittest.TestCase):
             mergeable=None,
             mergeable_state="unknown",
         )
+        self.assertEqual(self._evaluate(api), "blocked")
+        self.assertEqual(api.put_paths(), [])
+
+    def test_marker_change_during_final_revalidation_blocks(self):
+        api = FakeApi(final_body="Auto-merge: manual")
+        self.assertEqual(self._evaluate(api), "blocked")
+        self.assertEqual(api.put_paths(), [])
+
+    def test_base_change_during_final_revalidation_blocks(self):
+        api = FakeApi(final_base_sha="d" * 40)
         self.assertEqual(self._evaluate(api), "blocked")
         self.assertEqual(api.put_paths(), [])
 
