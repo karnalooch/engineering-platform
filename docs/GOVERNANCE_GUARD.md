@@ -58,6 +58,21 @@ app.config.js
 
 Consumers may add extra patterns through `additional_high_risk_patterns` for application-specific sensitive surfaces. The built-in defaults remain enforced and cannot be removed by a caller.
 
+### Dependabot high-risk exception
+
+Consumers that use Dependabot for workflow or dependency-file maintenance may opt in to:
+
+```yaml
+with:
+  allow_dependabot_high_risk_without_manual_marker: true
+```
+
+The default is `false`.
+
+When enabled, the guard waives only the PR-body `Auto-merge: manual` marker requirement, and only when the pull request author is exactly `dependabot[bot]`. All other governance checks remain active, including immutable action refs, fail-open rejection, aggregate-gate enforcement and high-risk path classification.
+
+This input does **not** make Dependabot PRs eligible for auto-merge. Merge policy remains caller-owned and must independently block or manually review high-risk changes.
+
 ## Why high-risk means manual
 
 High-risk classification does not mean the change is bad. It means the change can alter the safety boundary, dependency graph, toolchain, release process, or CI result itself.

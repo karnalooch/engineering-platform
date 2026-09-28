@@ -8,6 +8,11 @@ on:
         required: false
         type: string
         default: ""
+      allow_dependabot_high_risk_without_manual_marker:
+        description: Allow Dependabot-authored high-risk PRs to pass governance without the manual marker. Auto-merge policy remains caller-owned.
+        required: false
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -33,6 +38,8 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PR_BODY: ${{ github.event.pull_request.body || '' }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || '' }}
+          ALLOW_DEPENDABOT_HIGH_RISK_WITHOUT_MANUAL_MARKER: ${{ inputs.allow_dependabot_high_risk_without_manual_marker }}
           ADDITIONAL_HIGH_RISK_PATTERNS: ${{ inputs.additional_high_risk_patterns }}
         run: |
           python - <<'PY'
@@ -196,15 +203,34 @@ jobs:
                       notes.append(
                           "high-risk paths: " + ", ".join(sorted(high_risk))
                       )
-                      body = os.environ.get("PR_BODY", "")
-                      if not re.search(
-                          r"(?im)^\s*Auto-merge:\s*manual\s*$",
-                          body,
-                      ):
-                          problems.append(
-                              "high-risk PR must contain exactly "
-                              "'Auto-merge: manual' in the PR body"
+                      allow_dependabot = (
+                          os.environ.get(
+                              "ALLOW_DEPENDABOT_HIGH_RISK_WITHOUT_MANUAL_MARKER",
+                              "false",
+                          ).lower()
+                          == "true"
+                      )
+                      pr_author = os.environ.get("PR_AUTHOR", "").strip()
+                      dependabot_exception = (
+                          allow_dependabot
+                          and pr_author == "dependabot[bot]"
+                      )
+
+                      if dependabot_exception:
+                          notes.append(
+                              "high-risk Dependabot PR: manual marker requirement "
+                              "waived by explicit caller input"
                           )
+                      else:
+                          body = os.environ.get("PR_BODY", "")
+                          if not re.search(
+                              r"(?im)^\s*Auto-merge:\s*manual\s*$",
+                              body,
+                          ):
+                              problems.append(
+                                  "high-risk PR must contain exactly "
+                                  "'Auto-merge: manual' in the PR body"
+                              )
                   else:
                       notes.append("risk classification: normal")
 

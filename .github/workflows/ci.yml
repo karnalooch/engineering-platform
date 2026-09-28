@@ -62,8 +62,9 @@ jobs:
       - name: Validate reusable workflow contract
         run: python scripts/ci/validate_platform.py
 
-      - name: Test fail-closed auto-merge policy
+      - name: Test fail-closed governance and auto-merge policy
         run: |
+          python -m unittest scripts/ci/test_governance_workflow.py -v
           python -m unittest scripts/ci/test_auto_merge.py -v
           python -m unittest scripts/ci/test_auto_merge_workflow.py -v
 
