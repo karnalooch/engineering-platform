@@ -8,6 +8,7 @@ Application code stays in its product repository. This repository contains reusa
 
 - `karnalooch/YetAnotherCyclingSim`
 - `karnalooch/stunning-pancake` (4VELO), migrated incrementally after live proof
+- `karnalooch/Karoo-Nexus-Suite`
 
 ## Available contracts
 
