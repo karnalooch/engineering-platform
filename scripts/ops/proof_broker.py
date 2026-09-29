@@ -729,12 +729,13 @@ def evaluate_proof(
         if not actor:
             raise BrokerError("explicit proof request is missing actor")
         authorize_actor(repo, token, actor, policy)
-        if not status_only:
-            ensure_request_label(repo, token, pr_number, proof, apply)
 
     pr = get_pr(repo, token, pr_number)
     if pr.get("state") != "open":
         raise BrokerError(f"PR #{pr_number} is not open")
+
+    if explicit and not status_only:
+        ensure_request_label(repo, token, pr_number, proof, apply)
     branch, sha = resolve_pr_revision(repo, pr)
     request_id = make_request_id(proof_id, pr_number, sha)
 
