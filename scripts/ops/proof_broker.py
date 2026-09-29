@@ -506,7 +506,7 @@ def ensure_labels(
     }
     definitions: dict[str, tuple[str, str]] = {}
     for proof_id, proof in policy.get("proofs", {}).items():
-        if not isinstance(proof, dict):
+        if not isinstance(proof, dict) or not proof.get("enabled"):
             continue
         label = proof.get("label")
         if isinstance(label, str):
