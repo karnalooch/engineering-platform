@@ -1,0 +1,10 @@
+profile: release-critical
+extends: standard
+capabilities:
+  full_release_gate: required
+  artifact_provenance: recommended
+  release_evidence: required
+  deployment_proof: consumer_owned
+pr_merge_gate: aggregate
+release_gate: explicit
+
