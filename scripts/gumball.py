@@ -452,6 +452,7 @@ def apply_baseline(root: Path, profile: str, write: bool) -> list[tuple[str, str
         (root / "AGENTS.md", _generated_agents()),
         (root / "docs" / "README.md", _generated_docs_index()),
         (root / "docs" / "DIAGRAM_STYLE.md", _generated_diagram_style()),
+        (root / "docs" / "PROOF_BROKER.md", _source_file("docs/PROOF_BROKER.md")),
         (root / ".gumball" / "repository-os.json", _generated_repository_os()),
         (root / ".gumball" / "proof-broker.json", _source_file(".gumball/proof-broker.json")),
         (root / "scripts" / "ops" / "repository_os.py", _source_file("scripts/ops/repository_os.py")),
