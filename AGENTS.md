@@ -61,6 +61,21 @@ Gumball must be safe for both greenfield and existing repositories.
 - Unknown or ambiguous runtime/configuration surfaces fail safe toward broader validation.
 - Generated or managed sections must be distinguishable from project-owned sections.
 
+## Repository operating system
+
+Gumball-enabled repositories should keep work surfaces and release evidence finite and synchronized.
+
+- branches from merged/closed work are cleaned according to `.gumball/repository-os.json`;
+- PRs use the shared `type:*`, `area:*`, `risk:*` and `ci:*` label namespaces;
+- GitHub Projects represents repository reality and is reconciled from issue/PR state;
+- moving an issue to Project `Done` may close it only when policy explicitly enables that behavior;
+- releasable application artifacts carry exact version, stage, source SHA and artifact digest;
+- promote the same verified artifact between stages rather than rebuilding;
+- plan CI cost before starting heavy work and reuse a verified build fingerprint when possible;
+- heavyweight runtime/visual/hardware proofs are deferred to explicit lanes unless merge-critical.
+
+Read `docs/REPOSITORY_LIFECYCLE.md`, `docs/PROJECTS_FLOW.md`, `docs/RELEASE_LINEAGE.md`, `docs/LABELS.md` and `docs/CI_COST_GOVERNOR.md` before changing those contracts.
+
 ## Validation
 
 For repository changes:
