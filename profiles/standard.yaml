@@ -1,0 +1,11 @@
+profile: standard
+capabilities:
+  repository_policy: required
+  governance: required
+  security: required
+  docs_index: required
+  agents_contract: required
+  aggregate_gate: required
+  anti_noop: required
+heavy_pr_proofs: disabled
+
