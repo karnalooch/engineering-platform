@@ -3,14 +3,13 @@ name: Gumball Proof Broker
 on:
   pull_request_target:
     types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
       - labeled
   issue_comment:
     types:
       - created
+  repository_dispatch:
+    types:
+      - gumball-proof-request
   schedule:
     - cron: '23 * * * *'
   workflow_dispatch:
