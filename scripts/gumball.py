@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
-USES = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
+USES = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)", re.MULTILINE)
 FAIL_OPEN = re.compile(
     r"^\s*continue-on-error:\s*true\s*(?:#.*)?$",
     re.IGNORECASE | re.MULTILINE,
