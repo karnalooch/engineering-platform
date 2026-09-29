@@ -2,6 +2,23 @@
 
 All notable Gumball / engineering-platform contract changes are recorded here.
 
+## 0.5.0 — Repository OS
+
+- add machine-readable `.gumball/repository-os.json` policy;
+- add safe branch, pull-request and issue lifecycle planning plus trusted daily housekeeping;
+- add GitHub Projects v2 semantic flow reconciliation for Backlog/Ready/In Progress/In Review/Done/Blocked;
+- allow Project `Done` to close an issue only when explicit policy enables it;
+- add canonical PR label namespaces for type, area, risk, CI cost and lifecycle;
+- add trusted `pull_request_target` label/project automation that checks out only the default branch;
+- add release manifests binding application SemVer, delivery stage, exact source SHA and artifact SHA-256;
+- add `release-create` and `release-promote` primitives implementing build-once/promote-many;
+- add CI Cost Governor classification, build fingerprints, lazy/affected validation guidance and a one-heavy-lane automatic budget;
+- propagate repository OS policy, scripts, trusted workflow and release-manifest template through conservative `gumball apply`;
+- extend standard, monorepo, mobile, Unreal and release-critical profiles with lifecycle/release/cost controls;
+- self-test repository OS policy, trusted workflow behavior, Project flow, release lineage and CI-cost classification.
+
+Canonical consumer SHA: assigned from the v0.5.0 merge commit after merge.
+
 ## 0.4.0 — Gumball
 
 - rebrand the engineering platform product as **Gumball** while preserving the current `karnalooch/engineering-platform` repository coordinate for consumer compatibility;
