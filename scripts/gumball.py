@@ -55,6 +55,14 @@ CANDIDATE_FIELDS = {
 CANDIDATE_STATES = {"candidate", "proven", "platform"}
 
 
+def _is_gumball_source(root: Path) -> bool:
+    return (
+        (root / "VERSION").is_file()
+        and (root / "scripts" / "gumball.py").is_file()
+        and (root / ".github" / "workflows" / "reusable-governance.yml").is_file()
+    )
+
+
 def _workflow_files(root: Path) -> list[Path]:
     workflows = root / ".github" / "workflows"
     if not workflows.exists():
@@ -151,6 +159,10 @@ def audit_repository(root: Path) -> dict[str, Any]:
             "gumball_config": (root / "gumball.yaml").exists(),
             "agents": (root / "AGENTS.md").exists(),
             "docs_index": (root / "docs" / "README.md").exists(),
+            "diagram_style": (root / "docs" / "DIAGRAM_STYLE.md").exists(),
+            "repository_os_policy": (root / ".gumball" / "repository-os.json").exists(),
+            "dogfooding": (root / "docs" / "DOGFOODING.md").exists(),
+            "gumball_source": _is_gumball_source(root),
             "aggregate_gate": _has_fail_closed_aggregate(root),
             "workflow_count": len(workflow_files),
             "workflow_problems": _workflow_problems(root),
@@ -166,6 +178,8 @@ def plan_repository(audit: dict[str, Any]) -> list[dict[str, str]]:
         ("gumball_config", "gumball.yaml"),
         ("agents", "AGENTS.md"),
         ("docs_index", "docs/README.md"),
+        ("diagram_style", "docs/DIAGRAM_STYLE.md"),
+        ("repository_os_policy", ".gumball/repository-os.json"),
     ):
         if contracts[key]:
             actions.append({"action": "KEEP", "path": path, "reason": "already present; inspect before modifying"})
@@ -192,6 +206,86 @@ def plan_repository(audit: dict[str, Any]) -> list[dict[str, str]]:
     return actions
 
 
+def _gumball_self_problems(root: Path) -> list[str]:
+    if not _is_gumball_source(root):
+        return []
+
+    problems: list[str] = []
+
+    if not (root / "docs" / "DOGFOODING.md").is_file():
+        problems.append("docs/DOGFOODING.md is missing")
+    if not (root / "tools" / "capabilities.yaml").is_file():
+        problems.append("tools/capabilities.yaml is missing")
+
+    version = (root / "VERSION").read_text(encoding="utf-8").strip()
+    config_text = (root / "gumball.yaml").read_text(encoding="utf-8")
+    match = re.search(r"^platform_version:\s*([^\s#]+)", config_text, re.MULTILINE)
+    if not match:
+        problems.append("gumball.yaml platform_version is missing")
+    elif match.group(1) != version:
+        problems.append(
+            f"VERSION ({version}) != gumball.yaml platform_version ({match.group(1)})"
+        )
+
+    try:
+        repository_policy = json.loads(
+            (root / ".gumball" / "repository-os.json").read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        problems.append(f"repository OS policy is invalid: {exc}")
+    else:
+        for key in ("lifecycle", "projects", "labels", "release", "ci_cost"):
+            if key not in repository_policy:
+                problems.append(f"repository OS policy missing section: {key}")
+
+    required_repository_os_paths = (
+        "docs/REPOSITORY_LIFECYCLE.md",
+        "docs/PROJECTS_FLOW.md",
+        "docs/RELEASE_LINEAGE.md",
+        "docs/LABELS.md",
+        "docs/CI_COST_GOVERNOR.md",
+        "scripts/ops/repository_os.py",
+        "scripts/ops/github_ops.py",
+        ".github/workflows/repository-ops.yml",
+    )
+    for relative in required_repository_os_paths:
+        if not (root / relative).is_file():
+            problems.append(f"repository OS contract missing: {relative}")
+
+    candidate_dir = root / ".gumball" / "candidates"
+    platform_candidates = 0
+    if candidate_dir.exists():
+        for path in candidate_dir.glob("*.json"):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if payload.get("status") == "platform":
+                platform_candidates += 1
+    if platform_candidates < 1:
+        problems.append("at least one platform promotion provenance record is required")
+
+    ci_path = root / ".github" / "workflows" / "ci.yml"
+    if not ci_path.is_file():
+        problems.append(".github/workflows/ci.yml is missing")
+        return problems
+
+    ci_text = ci_path.read_text(encoding="utf-8")
+    required_ci_markers = (
+        "python scripts/gumball.py doctor",
+        "python scripts/gumball.py promote",
+        "python scripts/ci/check_docs_index.py",
+        "python -m unittest scripts/ci/test_gumball.py -v",
+        "python -m unittest scripts/ci/test_repository_os.py -v",
+        "python -m unittest scripts/ci/test_github_ops.py -v",
+    )
+    for marker in required_ci_markers:
+        if marker not in ci_text:
+            problems.append(f"Gumball CI does not self-prove: {marker}")
+
+    return problems
+
+
 def doctor_repository(root: Path) -> tuple[bool, list[tuple[str, str, str]]]:
     audit = audit_repository(root)
     contracts = audit["contracts"]
@@ -203,6 +297,8 @@ def doctor_repository(root: Path) -> tuple[bool, list[tuple[str, str, str]]]:
     add("gumball config", contracts["gumball_config"], "gumball.yaml")
     add("agent contract", contracts["agents"], "AGENTS.md")
     add("docs index", contracts["docs_index"], "docs/README.md")
+    add("diagram style", contracts["diagram_style"], "docs/DIAGRAM_STYLE.md")
+    add("repository OS policy", contracts["repository_os_policy"], ".gumball/repository-os.json")
     add("workflow discovery", contracts["workflow_count"] > 0, f"{contracts['workflow_count']} workflow(s)")
     add("aggregate gate", contracts["aggregate_gate"], "caller-local fail-closed Aggregate CI gate")
 
@@ -214,6 +310,16 @@ def doctor_repository(root: Path) -> tuple[bool, list[tuple[str, str, str]]]:
         if not workflow_problems
         else "; ".join(workflow_problems),
     )
+
+    self_problems = _gumball_self_problems(root.resolve())
+    if contracts["gumball_source"]:
+        add(
+            "Gumball dogfooding",
+            not self_problems,
+            "source repository satisfies self-hosting contract"
+            if not self_problems
+            else "; ".join(self_problems),
+        )
 
     return all(status == "PASS" for _, status, _ in checks), checks
 
@@ -228,6 +334,15 @@ ci:
   aggregate_gate: caller-local
   fail_closed: true
   anti_noop: true
+docs:
+  index_required: true
+  blueprint_diagram_style: required
+repository_os:
+  policy: .gumball/repository-os.json
+  lifecycle: required
+  labels: required
+  release_lineage: required_for_release_profiles
+  ci_cost_governor: required
 agents:
   preserve_local_instructions: true
   evaluate_upstream_promotion: true
@@ -248,6 +363,53 @@ def _generated_agents() -> str:
 - Evaluate reusable CI, governance, security, docs, tooling, MCP and agent-workflow improvements for promotion back to Gumball.
 - Report validation as PASS, FAIL, BLOCKED or NOT RUN.
 """
+
+
+def _generated_diagram_style() -> str:
+    return """# Blueprint diagram style
+
+This repository follows the Gumball Mermaid diagram language inspired by Unreal Engine Blueprint graphs.
+
+Use it for new or substantially revised architecture, CI/CD, agent, tooling, data-flow and runtime-proof diagrams. Preserve correct existing diagrams until their owning SSOT is materially changed.
+
+## Canonical classes
+
+```mermaid
+flowchart LR
+    IN["INPUT<br/>Source"] --> EXEC["EXECUTE<br/>Step"]
+    EXEC --> OUT["OUTPUT<br/>Verified"]
+
+    classDef input fill:#303846,stroke:#8ea1b8,color:#f7f9fc,stroke-width:2px;
+    classDef exec fill:#123f73,stroke:#49a2ff,color:#ffffff,stroke-width:3px;
+    classDef tool fill:#4b2f69,stroke:#b77cff,color:#ffffff,stroke-width:2px;
+    classDef decision fill:#69470e,stroke:#f0a72f,color:#ffffff,stroke-width:3px;
+    classDef success fill:#1f5736,stroke:#63d889,color:#ffffff,stroke-width:3px;
+    classDef danger fill:#6b2429,stroke:#ff6b73,color:#ffffff,stroke-width:3px;
+    classDef owned fill:#34373d,stroke:#9da4ae,color:#ffffff,stroke-width:2px;
+    classDef evidence fill:#164d5c,stroke:#5bd6ef,color:#ffffff,stroke-width:2px;
+
+    class IN input;
+    class EXEC exec;
+    class OUT success;
+
+    linkStyle default stroke-width:2px;
+```
+
+Solid edges are required/execution flow. Dashed edges are feedback, provenance or optional relationships. Label meaningful transitions such as PASS, FAIL, adopt and promote.
+
+Project-specific extensions are allowed. Reusable visual conventions should be evaluated for promotion back to Gumball.
+"""
+
+
+def _source_file(relative: str) -> str:
+    source = Path(__file__).resolve().parents[1] / relative
+    if source.is_file():
+        return source.read_text(encoding="utf-8")
+    raise RuntimeError(f"canonical Gumball source file is unavailable: {relative}")
+
+
+def _generated_repository_os() -> str:
+    return _source_file(".gumball/repository-os.json")
 
 
 def _generated_docs_index() -> str:
@@ -277,6 +439,12 @@ def apply_baseline(root: Path, profile: str, write: bool) -> list[tuple[str, str
         (root / "gumball.yaml", _generated_config(profile)),
         (root / "AGENTS.md", _generated_agents()),
         (root / "docs" / "README.md", _generated_docs_index()),
+        (root / "docs" / "DIAGRAM_STYLE.md", _generated_diagram_style()),
+        (root / ".gumball" / "repository-os.json", _generated_repository_os()),
+        (root / "scripts" / "ops" / "repository_os.py", _source_file("scripts/ops/repository_os.py")),
+        (root / "scripts" / "ops" / "github_ops.py", _source_file("scripts/ops/github_ops.py")),
+        (root / ".github" / "workflows" / "repository-ops.yml", _source_file(".github/workflows/repository-ops.yml")),
+        (root / "templates" / "release-manifest.json", _source_file("templates/release-manifest.json")),
         (root / ".gumball" / "candidates" / "README.md",
          "# Gumball promotion candidates\n\nRecord reusable downstream engineering improvements here.\n"),
     ]

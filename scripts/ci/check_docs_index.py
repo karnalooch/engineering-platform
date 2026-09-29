@@ -24,11 +24,18 @@ REQUIRED_HEADINGS = {
 
 REQUIRED_LINKS = {
     "ARCHITECTURE.md",
+    "DOGFOODING.md",
+    "DIAGRAM_STYLE.md",
     "ADOPTION.md",
     "CI_MODEL.md",
     "UPSTREAM_PROMOTION.md",
     "ONE_PROMPT_BOOTSTRAP.md",
     "MCP_AND_TOOLS.md",
+    "REPOSITORY_LIFECYCLE.md",
+    "PROJECTS_FLOW.md",
+    "RELEASE_LINEAGE.md",
+    "LABELS.md",
+    "CI_COST_GOVERNOR.md",
     "CONTRACT.md",
     "AGGREGATE_GATE.md",
     "GOVERNANCE_GUARD.md",

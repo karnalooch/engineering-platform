@@ -44,6 +44,8 @@ Use `docs/UPSTREAM_PROMOTION.md` for the promotion contract.
 
 `docs/README.md` is the documentation router and authority map.
 
+Use `docs/DIAGRAM_STYLE.md` for new or substantially revised architecture, CI, tooling, agent and data-flow diagrams. The shared style is part of the consumer baseline and must be propagated conservatively without overwriting a stronger project-owned visual convention.
+
 Changes to platform behavior, caller contracts, release policy, CI policy, adoption behavior or agent policy must update the relevant authoritative document in the same PR.
 
 Do not create a parallel document when an existing SSOT owns the subject.
@@ -59,6 +61,21 @@ Gumball must be safe for both greenfield and existing repositories.
 - Unknown or ambiguous runtime/configuration surfaces fail safe toward broader validation.
 - Generated or managed sections must be distinguishable from project-owned sections.
 
+## Repository operating system
+
+Gumball-enabled repositories should keep work surfaces and release evidence finite and synchronized.
+
+- branches from merged/closed work are cleaned according to `.gumball/repository-os.json`;
+- PRs use the shared `type:*`, `area:*`, `risk:*` and `ci:*` label namespaces;
+- GitHub Projects represents repository reality and is reconciled from issue/PR state;
+- moving an issue to Project `Done` may close it only when policy explicitly enables that behavior;
+- releasable application artifacts carry exact version, stage, source SHA and artifact digest;
+- promote the same verified artifact between stages rather than rebuilding;
+- plan CI cost before starting heavy work and reuse a verified build fingerprint when possible;
+- heavyweight runtime/visual/hardware proofs are deferred to explicit lanes unless merge-critical.
+
+Read `docs/REPOSITORY_LIFECYCLE.md`, `docs/PROJECTS_FLOW.md`, `docs/RELEASE_LINEAGE.md`, `docs/LABELS.md` and `docs/CI_COST_GOVERNOR.md` before changing those contracts.
+
 ## Validation
 
 For repository changes:
@@ -70,3 +87,5 @@ For repository changes:
 - report checks as PASS, FAIL, BLOCKED or NOT RUN.
 
 Never claim a proof that was not actually executed.
+
+Gumball must also satisfy its own baseline. Changes to platform policy or tooling must keep `docs/DOGFOODING.md` true and `gumball doctor` green on the source repository.

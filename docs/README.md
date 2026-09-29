@@ -8,26 +8,44 @@ This directory is the navigation layer and authority map for Gumball.
 
 Gumball is a **living engineering platform**, not a static template.
 
-It has two directions:
-
 ```mermaid
-flowchart TB
-    G["Gumball"]
-    G -->|"bootstrap / update"| P["Consumer repositories"]
-    P -->|"proven reusable improvements"| G
+flowchart LR
+    G["🎮 GUMBALL<br/>Shared contracts"] -->|"ADOPT / UPDATE"| C["⬢ CONSUMER<br/>Repository"]
+    C --> Y["YACS<br/>UE / world / proof"]
+    C --> V["4VELO<br/>monorepo / mobile / release"]
+    C --> O["ONICS · KAROO<br/>future projects"]
+    Y -.->|"PROMOTE"| P["↩ PLATFORM CANDIDATE<br/>Reusable invariant"]
+    V -.->|"PROMOTE"| P
+    O -.->|"PROMOTE"| P
+    P -.->|"PROVEN"| G
 
-    P --> Y["YACS"]
-    P --> V["4VELO"]
-    P --> O["ONICS / Karoo / future projects"]
+    classDef core fill:#172554,stroke:#60a5fa,color:#ffffff,stroke-width:4px;
+    classDef consumer fill:#34373d,stroke:#9da4ae,color:#ffffff,stroke-width:2px;
+    classDef tool fill:#4b2f69,stroke:#b77cff,color:#ffffff,stroke-width:3px;
+
+    class G core;
+    class C,Y,V,O consumer;
+    class P tool;
+
+    linkStyle default stroke-width:2px;
 ```
 
 Consumers inherit reusable engineering contracts. Consumers also act as real-world laboratories: reusable improvements discovered downstream are generalized, tested and promoted back into Gumball.
+
+The graph follows the shared [Blueprint diagram style](DIAGRAM_STYLE.md), inspired by Unreal Engine Blueprint graphs while remaining normal Mermaid stored as text.
 
 ## Authority map
 
 | Need | Read first | Status |
 |---|---|---|
 | Understand the platform shape | [ARCHITECTURE.md](ARCHITECTURE.md) | **Authoritative** |
+| Understand Gumball self-application | [DOGFOODING.md](DOGFOODING.md) | **Authoritative** |
+| Use the shared Blueprint diagram language | [DIAGRAM_STYLE.md](DIAGRAM_STYLE.md) | **Authoritative** |
+| Keep branches, PRs and issues orderly | [REPOSITORY_LIFECYCLE.md](REPOSITORY_LIFECYCLE.md) | **Authoritative** |
+| Reconcile GitHub Projects flow | [PROJECTS_FLOW.md](PROJECTS_FLOW.md) | **Authoritative** |
+| Version apps and promote artifacts | [RELEASE_LINEAGE.md](RELEASE_LINEAGE.md) | **Authoritative** |
+| Apply the shared label taxonomy | [LABELS.md](LABELS.md) | **Authoritative** |
+| Minimize heavy CI/build work | [CI_COST_GOVERNOR.md](CI_COST_GOVERNOR.md) | **Authoritative** |
 | Adopt Gumball in a repository | [ADOPTION.md](ADOPTION.md) | **Authoritative** |
 | Understand PR vs release/full CI | [CI_MODEL.md](CI_MODEL.md) | **Authoritative** |
 | Promote a downstream improvement upstream | [UPSTREAM_PROMOTION.md](UPSTREAM_PROMOTION.md) | **Authoritative** |
@@ -42,14 +60,18 @@ Consumers inherit reusable engineering contracts. Consumers also act as real-wor
 ## Operating principles
 
 1. **Fail closed.** Missing, unknown or unexpectedly skipped required evidence is failure.
-2. **Keep the final aggregate local.** The consumer owns the exact required proof graph.
-3. **Pay for evidence proportionally.** Pull requests run the smallest trustworthy surface; expensive whole-system proofs move to explicit release/full-validation lanes.
-4. **Documentation is routing, not archaeology.** Current SSOTs are explicit; historical evidence must not silently become current truth.
-5. **Agents preserve local intent.** Existing project rules are merged or extended, not blindly overwritten.
-6. **Downstream innovation flows upstream.** Promote reusable invariants, not project-specific scripts.
-7. **Immutable execution.** External Actions and shared workflow consumption use reviewed immutable SHAs.
+2. **Dogfood the platform.** Gumball must satisfy the same baseline invariants it asks consumers to adopt.
+3. **Keep the final aggregate local.** The consumer owns the exact required proof graph.
+4. **Pay for evidence proportionally.** Pull requests run the smallest trustworthy surface; expensive whole-system proofs move to explicit release/full-validation lanes.
+5. **Documentation is routing, not archaeology.** Current SSOTs are explicit; historical evidence must not silently become current truth.
+6. **Agents preserve local intent.** Existing project rules are merged or extended, not blindly overwritten.
+7. **Downstream innovation flows upstream.** Promote reusable invariants, not project-specific scripts.
+8. **Immutable execution.** External Actions and shared workflow consumption use reviewed immutable SHAs.
+9. **Shared visual language.** New or substantially revised architecture/workflow diagrams use the Gumball Blueprint style unless the project owns a stronger explicit convention.
+10. **Repository lifecycle is finite.** Merged branches, stale PRs/issues and Project cards are reconciled instead of accumulating forever.
+11. **Build once, promote many.** Application versions, delivery stages and artifact digests remain traceable to one exact source revision.
+12. **Classify before computing.** Gumball plans the smallest trustworthy CI proof set before starting heavy builds.
 
 ## Current compatibility note
 
 The GitHub repository is still named `karnalooch/engineering-platform`. Existing consumers must continue using that coordinate until a dedicated repository-rename migration updates and proves all immutable references.
-

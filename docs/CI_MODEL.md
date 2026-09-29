@@ -77,3 +77,11 @@ Gumball ships standard-library-only reference implementations:
 - `scripts/ci/assert_nonempty.py` — rejects selectors that unexpectedly resolve to zero work.
 
 They were generalized from failure modes proven in downstream CI. Consumers may adapt them, but must preserve the documented invariants.
+
+## Cost governance
+
+The proof graph is also a cost graph.
+
+Before expensive work, consumers should use the [CI Cost Governor](CI_COST_GOVERNOR.md) to classify impact, reuse an exact build fingerprint when available and defer non-merge-critical runtime/visual/hardware proof to manual, release or nightly lanes.
+
+A cost optimization may reduce work; it may not weaken the caller-local expected-proof contract.

@@ -4,5 +4,6 @@ capabilities:
   change_classifier: required
   workspace_match_assertion: required
   affected_test_plan: recommended
+  lazy_ci_matrix: required
+  artifact_fingerprint_reuse: recommended
 unknown_change_behavior: broad
-

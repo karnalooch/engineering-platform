@@ -1,6 +1,6 @@
 schema_version: 1
 name: Gumball
-platform_version: 0.4.0
+platform_version: 0.5.0
 
 adoption:
   mode: preserve-local
@@ -24,6 +24,12 @@ governance:
 docs:
   index_required: true
   ssot_map_required: true
+  blueprint_diagram_style: required
+
+dogfooding:
+  self_apply: true
+  doctor_required: true
+  promotion_provenance_required: true
 
 agents:
   enabled: true
@@ -41,3 +47,11 @@ tools:
   manifest: tools/capabilities.yaml
   secrets_in_repo_config: forbidden
   required_tool_unavailable: blocked
+
+repository_os:
+  policy: .gumball/repository-os.json
+  lifecycle: required
+  projects: supported
+  labels: required
+  release_lineage: required_for_release_profiles
+  ci_cost_governor: required
