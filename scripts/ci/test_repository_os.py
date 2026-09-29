@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
 from scripts.ops import repository_os
 
@@ -21,6 +23,7 @@ POLICY = {
         "stages": ["dev", "preview", "beta", "rc", "stable"],
         "require_exact_source_sha": True,
         "require_artifact_sha256": True,
+        "require_semver": True,
     },
 }
 
@@ -123,6 +126,42 @@ class ReleaseLineageTests(unittest.TestCase):
         }
         problems = repository_os.validate_release_manifest(manifest, POLICY)
         self.assertTrue(any("sha256" in problem for problem in problems))
+
+    def test_non_semver_version_fails_when_required(self):
+        manifest = {
+            "application": {"name": "app", "version": "banana", "stage": "rc"},
+            "source": {"sha": "a" * 40},
+            "artifact": {"name": "app.zip", "sha256": "b" * 64},
+        }
+        problems = repository_os.validate_release_manifest(manifest, POLICY)
+        self.assertTrue(any("SemVer" in problem for problem in problems))
+
+    def test_create_manifest_hashes_real_artifact_and_promotion_reuses_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact = Path(tmp) / "app.bin"
+            artifact.write_bytes(b"immutable artifact")
+            manifest = repository_os.create_release_manifest(
+                application="app",
+                version="1.2.3",
+                stage="beta",
+                source_sha="a" * 40,
+                build_id="build-17",
+                profile="release",
+                toolchain="test",
+                artifact_path=artifact,
+                gumball_version="0.5.0",
+            )
+
+        self.assertEqual(
+            manifest["artifact"]["sha256"],
+            repository_os.hashlib.sha256(b"immutable artifact").hexdigest(),
+        )
+        promoted = repository_os.promote_release_manifest(manifest, "rc", POLICY)
+        self.assertEqual(
+            promoted["artifact"]["sha256"],
+            manifest["artifact"]["sha256"],
+        )
+        self.assertFalse(promoted["promotion"]["artifact_rebuilt"])
 
     def test_stage_promotion_is_monotonic(self):
         stages = POLICY["release"]["stages"]
