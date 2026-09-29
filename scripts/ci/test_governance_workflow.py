@@ -33,6 +33,12 @@ class GovernanceWorkflowContractTests(unittest.TestCase):
             self.text,
         )
 
+    def test_immutable_ref_scanner_covers_inline_list_uses_syntax(self):
+        self.assertIn(
+            r"(?:-\s*)?uses:",
+            self.text,
+        )
+
     def test_exception_is_forwarded_through_explicit_environment(self):
         self.assertIn(
             "ALLOW_DEPENDABOT_HIGH_RISK_WITHOUT_MANUAL_MARKER:",
