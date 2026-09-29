@@ -23,7 +23,7 @@ def enabled_policy(*, automatic: bool = False, merge_critical: bool = False):
             "require_exact_sha_input": True,
             "require_request_id_run_name": True,
             "manual_workflow_dispatch_fallback": True,
-            "status_labels": {},
+            "status_label_template": "proof-status:$proof:$status",
         },
         "proofs": {
             "geometry": {
@@ -198,11 +198,12 @@ class BrokerDecisionTests(unittest.TestCase):
                 return_value=valid_target_workflow(),
             ),
             mock.patch.object(proof_broker, "set_status_label"),
+            mock.patch.object(proof_broker, "ensure_request_label"),
         ]
 
     def test_explicit_request_dispatches_heavy_proof(self):
         patches = self.common_patches()
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7]:
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7], patches[8]:
             with mock.patch.object(proof_broker, "dispatch_workflow") as dispatch:
                 result = proof_broker.evaluate_proof(
                     repo="owner/repo",
@@ -240,43 +241,44 @@ class BrokerDecisionTests(unittest.TestCase):
     def test_existing_success_is_reused_without_dispatch(self):
         policy = enabled_policy()
         with mock.patch.object(proof_broker, "authorize_actor", return_value="write"):
-            with mock.patch.object(
-                proof_broker,
-                "get_pr",
-                return_value={
-                    "state": "open",
-                    "head": {
-                        "ref": "feat/example",
-                        "sha": "d" * 40,
-                        "repo": {"full_name": "owner/repo"},
-                    },
-                },
-            ):
-                with mock.patch.object(proof_broker, "find_artifact", return_value=None):
-                    with mock.patch.object(
-                        proof_broker,
-                        "find_existing_run",
-                        return_value={
-                            "id": 17,
-                            "status": "completed",
-                            "conclusion": "success",
-                            "html_url": "https://example/run/17",
+            with mock.patch.object(proof_broker, "ensure_request_label"):
+                with mock.patch.object(
+                    proof_broker,
+                    "get_pr",
+                    return_value={
+                        "state": "open",
+                        "head": {
+                            "ref": "feat/example",
+                            "sha": "d" * 40,
+                            "repo": {"full_name": "owner/repo"},
                         },
-                    ):
-                        with mock.patch.object(proof_broker, "set_status_label"):
-                            with mock.patch.object(proof_broker, "dispatch_workflow") as dispatch:
-                                result = proof_broker.evaluate_proof(
-                                    repo="owner/repo",
-                                    token="token",
-                                    policy=policy,
-                                    proof_id="geometry",
-                                    pr_number=23,
-                                    actor="owner",
-                                    explicit=True,
-                                    retry=False,
-                                    status_only=False,
-                                    apply=True,
-                                )
+                    },
+                ):
+                    with mock.patch.object(proof_broker, "find_artifact", return_value=None):
+                        with mock.patch.object(
+                            proof_broker,
+                            "find_existing_run",
+                            return_value={
+                                "id": 17,
+                                "status": "completed",
+                                "conclusion": "success",
+                                "html_url": "https://example/run/17",
+                            },
+                        ):
+                            with mock.patch.object(proof_broker, "set_status_label"):
+                                with mock.patch.object(proof_broker, "dispatch_workflow") as dispatch:
+                                    result = proof_broker.evaluate_proof(
+                                        repo="owner/repo",
+                                        token="token",
+                                        policy=policy,
+                                        proof_id="geometry",
+                                        pr_number=23,
+                                        actor="owner",
+                                        explicit=True,
+                                        retry=False,
+                                        status_only=False,
+                                        apply=True,
+                                    )
         self.assertEqual(result["action"], "REUSE_RUN")
         dispatch.assert_not_called()
 
@@ -288,33 +290,34 @@ class BrokerDecisionTests(unittest.TestCase):
             "html_url": "https://example/run/19",
         }
         with mock.patch.object(proof_broker, "authorize_actor", return_value="write"):
-            with mock.patch.object(
-                proof_broker,
-                "get_pr",
-                return_value={
-                    "state": "open",
-                    "head": {
-                        "ref": "feat/example",
-                        "sha": "e" * 40,
-                        "repo": {"full_name": "owner/repo"},
+            with mock.patch.object(proof_broker, "ensure_request_label"):
+                with mock.patch.object(
+                    proof_broker,
+                    "get_pr",
+                    return_value={
+                        "state": "open",
+                        "head": {
+                            "ref": "feat/example",
+                            "sha": "e" * 40,
+                            "repo": {"full_name": "owner/repo"},
+                        },
                     },
-                },
-            ):
-                with mock.patch.object(proof_broker, "find_artifact", return_value=None):
-                    with mock.patch.object(proof_broker, "find_existing_run", return_value=run):
-                        with mock.patch.object(proof_broker, "set_status_label"):
-                            result = proof_broker.evaluate_proof(
-                                repo="owner/repo",
-                                token="token",
-                                policy=enabled_policy(),
-                                proof_id="geometry",
-                                pr_number=23,
-                                actor="owner",
-                                explicit=True,
-                                retry=False,
-                                status_only=False,
-                                apply=True,
-                            )
+                ):
+                    with mock.patch.object(proof_broker, "find_artifact", return_value=None):
+                        with mock.patch.object(proof_broker, "find_existing_run", return_value=run):
+                            with mock.patch.object(proof_broker, "set_status_label"):
+                                result = proof_broker.evaluate_proof(
+                                    repo="owner/repo",
+                                    token="token",
+                                    policy=enabled_policy(),
+                                    proof_id="geometry",
+                                    pr_number=23,
+                                    actor="owner",
+                                    explicit=True,
+                                    retry=False,
+                                    status_only=False,
+                                    apply=True,
+                                )
         self.assertEqual(result["action"], "FAILED_EXISTING")
 
     def test_retry_reruns_existing_failed_workflow(self):
@@ -325,36 +328,78 @@ class BrokerDecisionTests(unittest.TestCase):
             "html_url": "https://example/run/19",
         }
         with mock.patch.object(proof_broker, "authorize_actor", return_value="write"):
-            with mock.patch.object(
-                proof_broker,
-                "get_pr",
-                return_value={
-                    "state": "open",
-                    "head": {
-                        "ref": "feat/example",
-                        "sha": "f" * 40,
-                        "repo": {"full_name": "owner/repo"},
+            with mock.patch.object(proof_broker, "ensure_request_label"):
+                with mock.patch.object(
+                    proof_broker,
+                    "get_pr",
+                    return_value={
+                        "state": "open",
+                        "head": {
+                            "ref": "feat/example",
+                            "sha": "f" * 40,
+                            "repo": {"full_name": "owner/repo"},
+                        },
                     },
-                },
-            ):
-                with mock.patch.object(proof_broker, "find_artifact", return_value=None):
-                    with mock.patch.object(proof_broker, "find_existing_run", return_value=run):
-                        with mock.patch.object(proof_broker, "set_status_label"):
-                            with mock.patch.object(proof_broker, "rerun_workflow") as rerun:
-                                result = proof_broker.evaluate_proof(
-                                    repo="owner/repo",
-                                    token="token",
-                                    policy=enabled_policy(),
-                                    proof_id="geometry",
-                                    pr_number=23,
-                                    actor="owner",
-                                    explicit=True,
-                                    retry=True,
-                                    status_only=False,
-                                    apply=True,
-                                )
+                ):
+                    with mock.patch.object(proof_broker, "find_artifact", return_value=None):
+                        with mock.patch.object(proof_broker, "find_existing_run", return_value=run):
+                            with mock.patch.object(proof_broker, "set_status_label"):
+                                with mock.patch.object(proof_broker, "rerun_workflow") as rerun:
+                                    result = proof_broker.evaluate_proof(
+                                        repo="owner/repo",
+                                        token="token",
+                                        policy=enabled_policy(),
+                                        proof_id="geometry",
+                                        pr_number=23,
+                                        actor="owner",
+                                        explicit=True,
+                                        retry=True,
+                                        status_only=False,
+                                        apply=True,
+                                    )
         self.assertEqual(result["action"], "RERUN")
         rerun.assert_called_once_with("owner/repo", "token", 19)
+
+
+class StatusLabelTests(unittest.TestCase):
+    def test_status_update_preserves_other_proof_status(self):
+        policy = enabled_policy()
+        policy["proofs"]["visual"] = {
+            **policy["proofs"]["geometry"],
+            "label": "proof:visual",
+        }
+        issue = {
+            "labels": [
+                {"name": "proof:geometry"},
+                {"name": "proof:visual"},
+                {"name": "proof-status:geometry:running"},
+                {"name": "proof-status:visual:passed"},
+            ]
+        }
+        calls = []
+
+        def fake_request(token, method, path, payload=None):
+            if method == "GET":
+                return issue
+            calls.append((method, path, payload))
+            return {}
+
+        with mock.patch.object(proof_broker.github_ops, "request", side_effect=fake_request):
+            proof_broker.set_status_label(
+                "owner/repo",
+                "token",
+                23,
+                policy,
+                "geometry",
+                "passed",
+                True,
+            )
+
+        self.assertEqual(calls[0][0], "PUT")
+        labels = set(calls[0][2]["labels"])
+        self.assertIn("proof-status:geometry:passed", labels)
+        self.assertNotIn("proof-status:geometry:running", labels)
+        self.assertIn("proof-status:visual:passed", labels)
 
 
 class BrokerWorkflowSafetyTests(unittest.TestCase):
