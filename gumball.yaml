@@ -36,3 +36,8 @@ promotion:
     - proven
     - platform
 
+
+tools:
+  manifest: tools/capabilities.yaml
+  secrets_in_repo_config: forbidden
+  required_tool_unavailable: blocked
