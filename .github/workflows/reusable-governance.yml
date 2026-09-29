@@ -75,6 +75,13 @@ jobs:
 
           DEFAULT_HIGH_RISK_PATTERNS = (
               ".github/**",
+              "AGENTS.md",
+              "**/AGENTS.md",
+              "gumball.yaml",
+              "**/gumball.yaml",
+              ".gumball/**",
+              "profiles/**",
+              "scripts/gumball.py",
               "SECURITY.md",
               "**/SECURITY.md",
               "package.json",
