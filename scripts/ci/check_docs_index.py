@@ -36,6 +36,7 @@ REQUIRED_LINKS = {
     "RELEASE_LINEAGE.md",
     "LABELS.md",
     "CI_COST_GOVERNOR.md",
+    "PROOF_BROKER.md",
     "CONTRACT.md",
     "AGGREGATE_GATE.md",
     "GOVERNANCE_GUARD.md",
