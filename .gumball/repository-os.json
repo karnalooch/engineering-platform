@@ -49,7 +49,7 @@
         "Blocked"
       ]
     },
-    "close_issue_on_done": false,
+    "close_issue_on_done": true,
     "ready_label": "status:ready",
     "blocked_label": "lifecycle:blocked"
   },
