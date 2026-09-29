@@ -97,6 +97,30 @@ def paginate(token: str, path: str) -> list[Any]:
     return items
 
 
+def find_build_artifact(
+    repo: str,
+    token: str,
+    fingerprint: str,
+) -> dict[str, Any] | None:
+    name = repository_os.artifact_name(fingerprint)
+    encoded = urllib.parse.quote(name, safe="")
+    result = request(
+        token,
+        "GET",
+        f"/repos/{repo}/actions/artifacts?name={encoded}&per_page=100",
+    )
+    if not isinstance(result, dict):
+        raise GitHubError("artifact lookup returned a non-object response")
+    artifacts = [
+        artifact
+        for artifact in result.get("artifacts", [])
+        if not artifact.get("expired")
+    ]
+    if not artifacts:
+        return None
+    return max(artifacts, key=lambda item: item.get("created_at") or "")
+
+
 def sync_labels(repo: str, token: str, policy: dict[str, Any], apply: bool) -> list[str]:
     existing = {
         label["name"]: label
@@ -759,6 +783,9 @@ def main() -> int:
 
     sub.add_parser("labels-sync")
 
+    artifact = sub.add_parser("artifact-find")
+    artifact.add_argument("--fingerprint", required=True)
+
     pr = sub.add_parser("pr-label")
     pr.add_argument("--number", type=int, required=True)
 
@@ -791,6 +818,21 @@ def main() -> int:
     try:
         if args.command == "labels-sync":
             messages = sync_labels(args.repo, args.token, policy, args.apply)
+        elif args.command == "artifact-find":
+            artifact = find_build_artifact(args.repo, args.token, args.fingerprint)
+            if artifact is None:
+                print(json.dumps({"action": "BUILD", "artifact": None}, indent=2))
+            else:
+                print(json.dumps({
+                    "action": "REUSE",
+                    "artifact": {
+                        "id": artifact.get("id"),
+                        "name": artifact.get("name"),
+                        "created_at": artifact.get("created_at"),
+                        "archive_download_url": artifact.get("archive_download_url"),
+                    },
+                }, indent=2))
+            return 0
         elif args.command == "pr-label":
             result = label_pr(args.repo, args.number, args.token, policy, args.apply)
             print(json.dumps(result, indent=2))
