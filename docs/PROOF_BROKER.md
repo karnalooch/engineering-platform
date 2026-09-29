@@ -162,7 +162,21 @@ Automation/apps can be trusted explicitly through `defaults.trusted_actor_logins
 
 ### Automatic
 
-A proof may opt into automatic dispatch.
+A proof may opt into automatic dispatch, but the broker does **not** wake up on every PR synchronize event.
+
+A cheap trusted classifier emits a `repository_dispatch` event only when it believes a configured proof may be required:
+
+```json
+{
+  "event_type": "gumball-proof-request",
+  "client_payload": {
+    "proof": "r4-1b3-geometry",
+    "pr_number": 239
+  }
+}
+```
+
+The broker then independently re-evaluates the proof policy and current PR paths.
 
 Automatic heavy proof is allowed only when:
 
@@ -172,6 +186,8 @@ Automatic heavy proof is allowed only when:
 - no identical proof is queued/running.
 
 Non-merge-critical heavy proof is **DEFERRED** rather than burned automatically.
+
+This design avoids spending a runner merely to discover on every commit that no heavy proof is needed.
 
 ### Manual fallback
 
