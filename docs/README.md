@@ -46,6 +46,7 @@ The graph follows the shared [Blueprint diagram style](DIAGRAM_STYLE.md), inspir
 | Version apps and promote artifacts | [RELEASE_LINEAGE.md](RELEASE_LINEAGE.md) | **Authoritative** |
 | Apply the shared label taxonomy | [LABELS.md](LABELS.md) | **Authoritative** |
 | Minimize heavy CI/build work | [CI_COST_GOVERNOR.md](CI_COST_GOVERNOR.md) | **Authoritative** |
+| Dispatch heavy proofs without Actions UI clicking | [PROOF_BROKER.md](PROOF_BROKER.md) | **Authoritative** |
 | Adopt Gumball in a repository | [ADOPTION.md](ADOPTION.md) | **Authoritative** |
 | Understand PR vs release/full CI | [CI_MODEL.md](CI_MODEL.md) | **Authoritative** |
 | Promote a downstream improvement upstream | [UPSTREAM_PROMOTION.md](UPSTREAM_PROMOTION.md) | **Authoritative** |
@@ -71,6 +72,7 @@ The graph follows the shared [Blueprint diagram style](DIAGRAM_STYLE.md), inspir
 10. **Repository lifecycle is finite.** Merged branches, stale PRs/issues and Project cards are reconciled instead of accumulating forever.
 11. **Build once, promote many.** Application versions, delivery stages and artifact digests remain traceable to one exact source revision.
 12. **Classify before computing.** Gumball plans the smallest trustworthy CI proof set before starting heavy builds.
+13. **Intent, not clicking.** Heavy proof requests flow through the trusted Proof Broker with exact-SHA dedupe/reuse; the Actions UI is only a fallback.
 
 ## Current compatibility note
 
