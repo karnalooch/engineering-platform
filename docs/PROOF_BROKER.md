@@ -195,15 +195,18 @@ For the deterministic request id:
 
 ## Status labels
 
-The broker maintains generic status labels:
+The broker maintains status labels **per proof**, so multiple independent proofs can coexist on one PR:
 
-- `proof-status:running`;
-- `proof-status:passed`;
-- `proof-status:failed`;
-- `proof-status:deferred`;
-- `proof-status:reused`.
+- `proof-status:<proof-id>:requested`;
+- `proof-status:<proof-id>:running`;
+- `proof-status:<proof-id>:passed`;
+- `proof-status:<proof-id>:failed`;
+- `proof-status:<proof-id>:deferred`;
+- `proof-status:<proof-id>:reused`.
 
-The proof request label remains separate, for example `proof:r4-1b3-geometry`.
+For example, `proof-status:r4-1b3-geometry:passed` can coexist with `proof-status:visual:running`.
+
+The proof request label remains separate, for example `proof:r4-1b3-geometry`. A comment-triggered request adds that request label automatically so the hourly reconciler can continue tracking the proof after dispatch.
 
 ## Consumer workflow contract
 
