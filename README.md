@@ -48,6 +48,7 @@ Application code and product-specific runtime proof stay in product repositories
 - [Release and artifact lineage](docs/RELEASE_LINEAGE.md)
 - [Labels contract](docs/LABELS.md)
 - [CI Cost Governor](docs/CI_COST_GOVERNOR.md)
+- [Proof Broker](docs/PROOF_BROKER.md)
 
 ## CLI
 
@@ -72,6 +73,7 @@ python scripts/ops/repository_os.py labels-plan --title "feat: example" .github/
 python scripts/ops/repository_os.py release-create --help
 python scripts/ops/repository_os.py release-promote --help
 python scripts/ops/github_ops.py --help
+python scripts/ops/proof_broker.py validate
 ```
 
 ## Existing reusable contracts
@@ -113,3 +115,19 @@ Gumball v0.5 adds a repository operating layer:
 - CI Cost Governor with heavy-build fingerprint reuse.
 
 The trusted `.github/workflows/repository-ops.yml` workflow runs default-branch code only. Projects integration is disabled until a consumer supplies project owner/number and an authorized Project token.
+
+## Proof Broker
+
+Gumball v0.6 removes routine Actions-UI clicking from heavyweight proofs.
+
+A configured proof can be requested directly from a pull request:
+
+```text
+/gumball proof <proof-id>
+```
+
+or with its `proof:<proof-id>` label.
+
+The broker runs trusted default-branch orchestration, binds the exact PR SHA, reuses existing artifacts/runs, blocks duplicates and defers non-critical automatic heavy work. Manual `workflow_dispatch` stays available only as a recovery fallback.
+
+See [PROOF_BROKER.md](docs/PROOF_BROKER.md).
