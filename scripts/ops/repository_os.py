@@ -449,6 +449,9 @@ def lifecycle_plan(
             continue
 
         pr = branch.get("pull_request")
+        pr_labels = set(pr.get("labels", [])) if isinstance(pr, dict) else set()
+        if pr_labels.intersection(set(lifecycle.get("keep_labels", []))):
+            continue
         if (
             isinstance(pr, dict)
             and pr.get("merged")
@@ -492,7 +495,9 @@ def lifecycle_plan(
         if pr.get("state") != "open":
             continue
         labels = set(pr.get("labels", []))
-        if "lifecycle:keep" in labels:
+        if labels.intersection(set(lifecycle.get("keep_labels", []))):
+            continue
+        if labels.intersection(set(lifecycle.get("blocked_labels", []))):
             continue
         age = pr.get("inactive_days", 0)
         if (
@@ -515,7 +520,9 @@ def lifecycle_plan(
         if issue.get("state") != "open":
             continue
         labels = set(issue.get("labels", []))
-        if "lifecycle:keep" in labels:
+        if labels.intersection(set(lifecycle.get("keep_labels", []))):
+            continue
+        if labels.intersection(set(lifecycle.get("blocked_labels", []))):
             continue
         age = issue.get("inactive_days", 0)
         if (
