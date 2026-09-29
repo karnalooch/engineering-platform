@@ -78,6 +78,12 @@ def validate_policy(policy: dict[str, Any]) -> list[str]:
     if not isinstance(allowed_permissions, list) or not allowed_permissions:
         problems.append("defaults.allowed_permissions must be a non-empty list")
 
+    trusted_actors = defaults.get("trusted_actor_logins", [])
+    if not isinstance(trusted_actors, list) or not all(
+        isinstance(actor, str) and actor for actor in trusted_actors
+    ):
+        problems.append("defaults.trusted_actor_logins must be a string list")
+
     status_template = defaults.get(
         "status_label_template",
         "proof-status:$proof:$status",
@@ -276,6 +282,10 @@ def authorize_actor(
     actor: str,
     policy: dict[str, Any],
 ) -> str:
+    trusted = set(policy["defaults"].get("trusted_actor_logins", []))
+    if actor in trusted:
+        return "trusted-actor"
+
     permission = actor_permission(repo, token, actor)
     allowed = set(policy["defaults"].get("allowed_permissions", []))
     if permission not in allowed:
