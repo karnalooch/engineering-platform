@@ -124,6 +124,15 @@ def validate_policy(policy: dict[str, Any]) -> list[str]:
         if not isinstance(proof.get("merge_critical"), bool):
             problems.append(f"{prefix}: merge_critical must be boolean")
 
+        allowed_write_permissions = proof.get("allowed_write_permissions", [])
+        if not isinstance(allowed_write_permissions, list) or not all(
+            isinstance(permission, str) and permission
+            for permission in allowed_write_permissions
+        ):
+            problems.append(
+                f"{prefix}: allowed_write_permissions must be a string list"
+            )
+
         request_input = proof.get("request_id_input")
         inputs = proof.get("inputs")
         if enabled and (not isinstance(request_input, str) or not request_input):
@@ -398,6 +407,23 @@ def validate_workflow_contract(
             text,
         ):
             problems.append(f"exact-SHA input {input_name!r} is missing")
+        if f"inputs.{input_name}" not in text:
+            problems.append(
+                f"exact-SHA input {input_name!r} is declared but never referenced"
+            )
+
+    if re.search(r"(?m)^\s*permissions:\s*write-all\s*$", text):
+        problems.append("target workflow permissions: write-all is forbidden")
+
+    allowed_write = set(proof.get("allowed_write_permissions", []))
+    for permission in re.findall(
+        r"(?m)^\s{2,}([A-Za-z0-9-]+):\s*write\s*$",
+        text,
+    ):
+        if permission not in allowed_write:
+            problems.append(
+                f"target workflow write permission {permission!r} is not allow-listed"
+            )
 
     return problems
 
