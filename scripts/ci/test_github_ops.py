@@ -120,6 +120,37 @@ class GithubOpsContractTests(unittest.TestCase):
             )
         self.assertEqual(artifact["id"], 3)
 
+    def test_pr_label_reconciliation_replaces_namespace_labels(self):
+        current_issue = {
+            "labels": [
+                {"name": "risk:low"},
+                {"name": "ci:light"},
+                {"name": "keep-me"},
+            ]
+        }
+        with mock.patch.object(
+            github_ops,
+            "_current_labels",
+            return_value=["risk:low", "ci:light", "keep-me"],
+        ):
+            with mock.patch.object(github_ops, "request") as request:
+                github_ops._replace_namespace_labels(
+                    "owner/repo",
+                    17,
+                    "token",
+                    ["risk:high", "ci:standard"],
+                    {"risk", "ci"},
+                    apply=True,
+                )
+
+        method, path, payload = request.call_args.args[1:]
+        self.assertEqual(method, "PUT")
+        self.assertEqual(path, "/repos/owner/repo/issues/17/labels")
+        self.assertEqual(
+            sorted(payload["labels"]),
+            ["ci:standard", "keep-me", "risk:high"],
+        )
+
     def test_policy_has_unique_label_definitions(self):
         policy = repository_os.load_policy(ROOT / ".gumball" / "repository-os.json")
         names = [item["name"] for item in policy["labels"]["definitions"]]
