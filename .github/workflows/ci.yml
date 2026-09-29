@@ -14,6 +14,36 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  plan:
+    name: CI cost plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      classification: ${{ steps.plan.outputs.classification }}
+      security_required: ${{ steps.plan.outputs.security_required }}
+      reason: ${{ steps.plan.outputs.reason }}
+    steps:
+      - name: Checkout repository history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Plan exact validation surface
+        id: plan
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ci/plan_gumball_ci.py \
+            --event-name "${GITHUB_EVENT_NAME}" \
+            --base-sha "${BASE_SHA}" \
+            --head-sha "${HEAD_SHA}" >> "${GITHUB_OUTPUT}"
+
   repo-policy:
     name: Repository policy
     permissions:
@@ -110,6 +140,8 @@ jobs:
 
   security:
     name: Security baseline
+    needs: plan
+    if: ${{ needs.plan.outputs.security_required == 'true' }}
     permissions:
       contents: read
       security-events: write
@@ -121,6 +153,7 @@ jobs:
     name: Aggregate CI gate
     if: ${{ always() }}
     needs:
+      - plan
       - repo-policy
       - governance
       - workflow-contract
@@ -129,9 +162,12 @@ jobs:
     timeout-minutes: 2
     permissions: {}
     steps:
-      - name: Fail closed unless every required job passed
+      - name: Fail closed against the planned proof set
         shell: bash
         env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          CLASSIFICATION: ${{ needs.plan.outputs.classification }}
+          SECURITY_REQUIRED: ${{ needs.plan.outputs.security_required }}
           REPO_POLICY_RESULT: ${{ needs.repo-policy.result }}
           GOVERNANCE_RESULT: ${{ needs.governance.result }}
           WORKFLOW_CONTRACT_RESULT: ${{ needs.workflow-contract.result }}
@@ -139,11 +175,12 @@ jobs:
         run: |
           set -euo pipefail
           failed=0
+
           for entry in \
+            "plan=${PLAN_RESULT}" \
             "repo-policy=${REPO_POLICY_RESULT}" \
             "governance=${GOVERNANCE_RESULT}" \
-            "workflow-contract=${WORKFLOW_CONTRACT_RESULT}" \
-            "security=${SECURITY_RESULT}"
+            "workflow-contract=${WORKFLOW_CONTRACT_RESULT}"
           do
             name="${entry%%=*}"
             result="${entry#*=}"
@@ -152,7 +189,27 @@ jobs:
               failed=1
             fi
           done
+
+          case "${SECURITY_REQUIRED}" in
+            true)
+              if [ "${SECURITY_RESULT}" != "success" ]; then
+                echo "::error::security: required by ${CLASSIFICATION} plan, got ${SECURITY_RESULT}"
+                failed=1
+              fi
+              ;;
+            false)
+              if [ "${SECURITY_RESULT}" != "skipped" ]; then
+                echo "::error::security: docs-only plan expected skipped, got ${SECURITY_RESULT}"
+                failed=1
+              fi
+              ;;
+            *)
+              echo "::error::planner: invalid security_required='${SECURITY_REQUIRED}'"
+              failed=1
+              ;;
+          esac
+
           if [ "${failed}" -ne 0 ]; then
             exit 1
           fi
-          echo "aggregate: PASS"
+          echo "aggregate: PASS classification=${CLASSIFICATION} security_required=${SECURITY_REQUIRED}"

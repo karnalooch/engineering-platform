@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from scripts.ci import assert_nonempty, evaluate_aggregate
+from scripts.ci import assert_nonempty, evaluate_aggregate, plan_gumball_ci
 
 
 class AggregateEvaluatorTests(unittest.TestCase):
@@ -53,6 +53,57 @@ class AntiNoopTests(unittest.TestCase):
         ok, detail = assert_nonempty.evaluate(3)
         self.assertTrue(ok)
         self.assertIn("matched 3", detail)
+
+
+class GumballCiPlannerTests(unittest.TestCase):
+    def test_docs_only_skips_heavy_security_baseline(self):
+        plan = plan_gumball_ci.plan_for_event(
+            "pull_request",
+            ["docs/CI_MODEL.md", "README.md"],
+        )
+        self.assertEqual("docs-only", plan.classification)
+        self.assertFalse(plan.security_required)
+
+    def test_ci_core_change_forces_full_security(self):
+        plan = plan_gumball_ci.plan_for_event(
+            "pull_request",
+            [".github/workflows/ci.yml"],
+        )
+        self.assertEqual("full", plan.classification)
+        self.assertTrue(plan.security_required)
+
+    def test_scripts_ci_change_forces_full_security(self):
+        plan = plan_gumball_ci.plan_for_event(
+            "pull_request",
+            ["scripts/ci/evaluate_aggregate.py"],
+        )
+        self.assertTrue(plan.security_required)
+
+    def test_security_policy_document_forces_full_security(self):
+        plan = plan_gumball_ci.plan_for_event(
+            "pull_request",
+            ["SECURITY.md"],
+        )
+        self.assertEqual("full", plan.classification)
+        self.assertTrue(plan.security_required)
+
+    def test_mixed_docs_and_code_forces_full_security(self):
+        plan = plan_gumball_ci.plan_for_event(
+            "pull_request",
+            ["docs/README.md", "scripts/gumball.py"],
+        )
+        self.assertEqual("full", plan.classification)
+        self.assertTrue(plan.security_required)
+
+    def test_empty_pr_change_set_fails_closed(self):
+        plan = plan_gumball_ci.plan_for_event("pull_request", [])
+        self.assertEqual("full", plan.classification)
+        self.assertTrue(plan.security_required)
+
+    def test_non_pr_event_always_uses_full_security(self):
+        plan = plan_gumball_ci.plan_for_event("push", ["docs/README.md"])
+        self.assertEqual("full", plan.classification)
+        self.assertTrue(plan.security_required)
 
 
 if __name__ == "__main__":
