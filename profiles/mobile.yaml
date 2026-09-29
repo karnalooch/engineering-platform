@@ -4,5 +4,8 @@ capabilities:
   native_runtime_boundary: recommended
   native_smoke: profile_owned
   release_artifact_proof: release_lane
+  release_manifest: required
+  build_once_promote_many: required
+  artifact_fingerprint_reuse: required
 heavy_pr_proofs: targeted
-
+automatic_heavy_build_lanes_max: 1
