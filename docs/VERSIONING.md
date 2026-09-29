@@ -10,6 +10,7 @@ Gumball follows Semantic Versioning for its human-facing contract version. The G
 - `v0.3.1` — GitHub Actions toolchain refresh (`setup-python` v7.0.0, `checkout` v7.0.1) with no intended caller-interface change; canonical commit assigned from the manual v0.3.1 release merge.
 - `v0.4.0` — Gumball identity, living-platform feedback loop, conservative adoption CLI, docs router, profiles and promoted CI primitives; canonical commit assigned from the v0.4.0 merge.
 - `v0.5.0` — Repository OS: branch/PR/issue lifecycle, GitHub Projects reconciliation, shared labels, application release/artifact lineage and CI Cost Governor.
+- `v0.6.0` — Proof Broker: authorized PR intent → trusted default-branch workflow_dispatch with exact-SHA binding, dedupe/reuse, status reconciliation and Cost Governor integration.
 
 ## Consumer pinning
 
