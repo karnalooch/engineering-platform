@@ -1,4 +1,4 @@
-name: Engineering Platform CI
+name: Gumball CI
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: engineering-platform-ci-${{ github.workflow }}-${{ github.ref }}
+  group: gumball-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -61,6 +61,11 @@ jobs:
 
       - name: Validate reusable workflow contract
         run: python scripts/ci/validate_platform.py
+
+      - name: Validate Gumball bootstrap and feedback contracts
+        run: |
+          python scripts/gumball.py doctor
+          python -m unittest scripts/ci/test_gumball.py -v
 
       - name: Test fail-closed governance and auto-merge policy
         run: |
