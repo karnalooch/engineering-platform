@@ -35,20 +35,20 @@ FAILED_CONCLUSIONS = {
 ACTIVE_STATUSES = {"queued", "in_progress", "pending", "waiting", "requested"}
 
 STATUS_COLORS = {
-    "proof-status:requested": "FBCA04",
-    "proof-status:running": "1D76DB",
-    "proof-status:passed": "0E8A16",
-    "proof-status:failed": "D93F0B",
-    "proof-status:deferred": "6A737D",
-    "proof-status:reused": "5319E7",
+    "requested": "FBCA04",
+    "running": "1D76DB",
+    "passed": "0E8A16",
+    "failed": "D93F0B",
+    "deferred": "6A737D",
+    "reused": "5319E7",
 }
 STATUS_DESCRIPTIONS = {
-    "proof-status:requested": "Proof requested but not yet dispatched",
-    "proof-status:running": "Broker-managed proof is queued or running",
-    "proof-status:passed": "Broker-managed proof passed for current PR revision",
-    "proof-status:failed": "Broker-managed proof failed for current PR revision",
-    "proof-status:deferred": "Heavy proof is intentionally deferred by CI cost policy",
-    "proof-status:reused": "Existing successful run/artifact reused for current revision",
+    "requested": "Proof requested but not yet dispatched",
+    "running": "Broker-managed proof is queued or running",
+    "passed": "Broker-managed proof passed for current PR revision",
+    "failed": "Broker-managed proof failed for current PR revision",
+    "deferred": "Heavy proof is intentionally deferred by CI cost policy",
+    "reused": "Existing successful run/artifact reused for current revision",
 }
 
 
@@ -77,6 +77,19 @@ def validate_policy(policy: dict[str, Any]) -> list[str]:
     allowed_permissions = defaults.get("allowed_permissions")
     if not isinstance(allowed_permissions, list) or not allowed_permissions:
         problems.append("defaults.allowed_permissions must be a non-empty list")
+
+    status_template = defaults.get(
+        "status_label_template",
+        "proof-status:$proof:$status",
+    )
+    if (
+        not isinstance(status_template, str)
+        or "$proof" not in status_template
+        or "$status" not in status_template
+    ):
+        problems.append(
+            "defaults.status_label_template must include $proof and $status"
+        )
 
     for proof_id, proof in proofs.items():
         prefix = f"proofs.{proof_id}"
@@ -161,6 +174,22 @@ def validate_policy(policy: dict[str, Any]) -> list[str]:
                 )
 
     return problems
+
+
+def status_label_name(
+    policy: dict[str, Any],
+    proof_id: str,
+    status: str,
+) -> str:
+    if status not in STATUS_COLORS:
+        raise BrokerError(f"unknown proof status: {status!r}")
+    template = str(
+        policy.get("defaults", {}).get(
+            "status_label_template",
+            "proof-status:$proof:$status",
+        )
+    )
+    return template.replace("$proof", proof_id).replace("$status", status)
 
 
 def make_request_id(proof_id: str, pr_number: int, sha: str) -> str:
