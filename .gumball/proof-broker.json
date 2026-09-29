@@ -13,8 +13,7 @@
     "manual_workflow_dispatch_fallback": true,
     "reconcile_interval_minutes": 60,
     "status_label_template": "proof-status:$proof:$status",
-    "trusted_actor_logins": [],
-    "forbid_target_write_permissions": true
+    "trusted_actor_logins": []
   },
   "proofs": {
     "example-heavy-proof": {
