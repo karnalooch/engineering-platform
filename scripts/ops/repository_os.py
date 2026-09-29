@@ -13,6 +13,11 @@ from typing import Any
 
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+SEMVER = re.compile(
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
+    r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+    r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
+)
 
 TYPE_PREFIXES = {
     "feat": "type:feature",
@@ -31,8 +36,21 @@ AREA_PATTERNS = {
     "area:tooling": ["scripts/**", "tools/**"],
     "area:security": ["SECURITY.md", "**/SECURITY.md", "**/*security*", "**/*auth*"],
     "area:release": ["VERSION", "CHANGELOG.md", "**/*release*", "**/eas.json", "**/app.config.*"],
-    "area:runtime": ["Source/**", "Content/**", "mobile/**", "android/**", "ios/**", "**/*.uproject", "Dockerfile*", "**/Dockerfile*"],
-    "area:project": [".github/ISSUE_TEMPLATE/**", ".github/PULL_REQUEST_TEMPLATE*", "**/*project*"],
+    "area:runtime": [
+        "Source/**",
+        "Content/**",
+        "mobile/**",
+        "android/**",
+        "ios/**",
+        "**/*.uproject",
+        "Dockerfile*",
+        "**/Dockerfile*",
+    ],
+    "area:project": [
+        ".github/ISSUE_TEMPLATE/**",
+        ".github/PULL_REQUEST_TEMPLATE*",
+        "**/*project*",
+    ],
 }
 
 HIGH_RISK_PATTERNS = [
@@ -83,35 +101,6 @@ def _matches(path: str, patterns: list[str]) -> bool:
     return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
 
 
-def classify_pr(title: str, paths: list[str]) -> dict[str, Any]:
-    normalized = title.strip().lower()
-    prefix = normalized.split(":", 1)[0].split("(", 1)[0]
-    type_label = TYPE_PREFIXES.get(prefix)
-
-    areas = sorted(
-        label
-        for label, patterns in AREA_PATTERNS.items()
-        if any(_matches(path, patterns) for path in paths)
-    )
-
-    risk = "risk:high" if any(_matches(path, HIGH_RISK_PATTERNS) for path in paths) else "risk:low"
-    if risk == "risk:low" and len(set(areas)) >= 3:
-        risk = "risk:medium"
-
-    ci_plan = plan_ci(paths)
-
-    labels = [label for label in [type_label, risk, ci_plan["label"]] if label]
-    labels.extend(areas)
-
-    return {
-        "type": type_label,
-        "areas": areas,
-        "risk": risk,
-        "ci": ci_plan,
-        "labels": sorted(set(labels)),
-    }
-
-
 def plan_ci(paths: list[str]) -> dict[str, Any]:
     if not paths:
         return {
@@ -147,7 +136,9 @@ def plan_ci(paths: list[str]) -> dict[str, Any]:
             "tier": "L4",
             "reason": "runtime/native/build-affecting paths changed",
             "heavy_build": True,
-            "deferred": ["visual/hardware proof unless merge-critical or release-required"],
+            "deferred": [
+                "visual/hardware proof unless merge-critical or release-required"
+            ],
         }
 
     standard = any(_matches(path, STANDARD_PATTERNS) for path in paths)
@@ -158,6 +149,38 @@ def plan_ci(paths: list[str]) -> dict[str, Any]:
         "reason": "affected static/unit/contract validation",
         "heavy_build": False,
         "deferred": ["runtime", "visual", "hardware"],
+    }
+
+
+def classify_pr(title: str, paths: list[str]) -> dict[str, Any]:
+    normalized = title.strip().lower()
+    prefix = normalized.split(":", 1)[0].split("(", 1)[0]
+    type_label = TYPE_PREFIXES.get(prefix)
+
+    areas = sorted(
+        label
+        for label, patterns in AREA_PATTERNS.items()
+        if any(_matches(path, patterns) for path in paths)
+    )
+
+    risk = (
+        "risk:high"
+        if any(_matches(path, HIGH_RISK_PATTERNS) for path in paths)
+        else "risk:low"
+    )
+    if risk == "risk:low" and len(set(areas)) >= 3:
+        risk = "risk:medium"
+
+    ci_plan = plan_ci(paths)
+    labels = [label for label in [type_label, risk, ci_plan["label"]] if label]
+    labels.extend(areas)
+
+    return {
+        "type": type_label,
+        "areas": areas,
+        "risk": risk,
+        "ci": ci_plan,
+        "labels": sorted(set(labels)),
     }
 
 
@@ -220,18 +243,14 @@ def project_action(
     if desired == "unknown":
         return {"action": "UNKNOWN", "desired": desired}
 
-    if current_semantic_state != desired:
-        action = "MOVE"
-    else:
-        action = "MATCH"
+    action = "MOVE" if current_semantic_state != desired else "MATCH"
 
-    close = (
+    if (
         close_issue_on_done
         and item.get("kind") == "issue"
         and item.get("state") == "open"
         and current_semantic_state == "done"
-    )
-    if close:
+    ):
         action = "CLOSE"
 
     return {"action": action, "desired": desired}
@@ -259,6 +278,8 @@ def validate_release_manifest(
     version = application.get("version")
     if not isinstance(version, str) or not version.strip():
         problems.append("application.version is required")
+    elif release.get("require_semver") and not SEMVER.fullmatch(version):
+        problems.append(f"application.version must be SemVer: {version!r}")
 
     sha = source.get("sha") if isinstance(source, dict) else None
     if release.get("require_exact_source_sha") and (
@@ -278,6 +299,60 @@ def validate_release_manifest(
     return problems
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def create_release_manifest(
+    *,
+    application: str,
+    version: str,
+    stage: str,
+    source_sha: str,
+    build_id: str,
+    profile: str,
+    toolchain: str,
+    artifact_path: Path,
+    gumball_version: str,
+) -> dict[str, Any]:
+    artifact_digest = sha256_file(artifact_path)
+    fingerprint = build_fingerprint(
+        source_sha=source_sha,
+        profile=profile,
+        toolchain=toolchain,
+        relevant_inputs={
+            "artifact_name": artifact_path.name,
+            "artifact_sha256": artifact_digest,
+        },
+    )
+    return {
+        "schema_version": 1,
+        "application": {
+            "name": application,
+            "version": version,
+            "stage": stage,
+        },
+        "source": {"sha": source_sha},
+        "build": {
+            "id": build_id,
+            "profile": profile,
+            "toolchain": toolchain,
+        },
+        "artifact": {
+            "name": artifact_path.name,
+            "sha256": artifact_digest,
+        },
+        "provenance": {
+            "gumball_version": gumball_version,
+            "build_fingerprint": fingerprint,
+        },
+    }
+
+
 def can_promote_stage(current: str, target: str, stages: list[str]) -> bool:
     try:
         current_index = stages.index(current)
@@ -287,7 +362,36 @@ def can_promote_stage(current: str, target: str, stages: list[str]) -> bool:
     return target_index >= current_index
 
 
-def lifecycle_plan(snapshot: dict[str, Any], policy: dict[str, Any]) -> list[dict[str, Any]]:
+def promote_release_manifest(
+    manifest: dict[str, Any],
+    target_stage: str,
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    problems = validate_release_manifest(manifest, policy)
+    if problems:
+        raise ValueError("; ".join(problems))
+
+    stages = policy["release"]["stages"]
+    current = manifest["application"]["stage"]
+    if target_stage not in stages:
+        raise ValueError(f"unknown target stage: {target_stage!r}")
+    if not can_promote_stage(current, target_stage, stages):
+        raise ValueError(f"cannot promote stage {current!r} -> {target_stage!r}")
+
+    promoted = json.loads(json.dumps(manifest))
+    promoted["application"]["stage"] = target_stage
+    promoted["promotion"] = {
+        "from_stage": current,
+        "to_stage": target_stage,
+        "artifact_rebuilt": False,
+    }
+    return promoted
+
+
+def lifecycle_plan(
+    snapshot: dict[str, Any],
+    policy: dict[str, Any],
+) -> list[dict[str, Any]]:
     """Plan only deterministic lifecycle actions from an externally gathered snapshot."""
     actions: list[dict[str, Any]] = []
     lifecycle = policy["lifecycle"]
@@ -302,6 +406,7 @@ def lifecycle_plan(snapshot: dict[str, Any], policy: dict[str, Any]) -> list[dic
         name = branch.get("name")
         if not name:
             continue
+
         protected = branch.get("protected", False) or any(
             fnmatch.fnmatch(name, pattern)
             for pattern in lifecycle["protected_branch_patterns"]
@@ -310,12 +415,44 @@ def lifecycle_plan(snapshot: dict[str, Any], policy: dict[str, Any]) -> list[dic
             continue
 
         pr = branch.get("pull_request")
-        if isinstance(pr, dict) and pr.get("merged") and pr.get("age_hours", 0) >= lifecycle["merged_branch_delete_after_hours"]:
-            actions.append({"action": "DELETE_BRANCH", "branch": name, "reason": "merged PR grace expired"})
-        elif isinstance(pr, dict) and pr.get("state") == "closed" and not pr.get("merged") and pr.get("age_days", 0) >= lifecycle["closed_unmerged_branch_delete_after_days"]:
-            actions.append({"action": "DELETE_BRANCH", "branch": name, "reason": "closed-unmerged PR grace expired"})
-        elif branch.get("orphan_age_days", 0) >= lifecycle["orphan_branch_report_after_days"]:
-            actions.append({"action": "REPORT_ORPHAN_BRANCH", "branch": name, "reason": "no active PR"})
+        if (
+            isinstance(pr, dict)
+            and pr.get("merged")
+            and pr.get("age_hours", 0)
+            >= lifecycle["merged_branch_delete_after_hours"]
+        ):
+            actions.append(
+                {
+                    "action": "DELETE_BRANCH",
+                    "branch": name,
+                    "reason": "merged PR grace expired",
+                }
+            )
+        elif (
+            isinstance(pr, dict)
+            and pr.get("state") == "closed"
+            and not pr.get("merged")
+            and pr.get("age_days", 0)
+            >= lifecycle["closed_unmerged_branch_delete_after_days"]
+        ):
+            actions.append(
+                {
+                    "action": "DELETE_BRANCH",
+                    "branch": name,
+                    "reason": "closed-unmerged PR grace expired",
+                }
+            )
+        elif (
+            branch.get("orphan_age_days", 0)
+            >= lifecycle["orphan_branch_report_after_days"]
+        ):
+            actions.append(
+                {
+                    "action": "REPORT_ORPHAN_BRANCH",
+                    "branch": name,
+                    "reason": "no active PR",
+                }
+            )
 
     for pr in snapshot.get("pull_requests", []):
         if pr.get("state") != "open":
@@ -324,10 +461,21 @@ def lifecycle_plan(snapshot: dict[str, Any], policy: dict[str, Any]) -> list[dic
         if "lifecycle:keep" in labels:
             continue
         age = pr.get("inactive_days", 0)
-        if age >= lifecycle["stale_pr_after_days"] + lifecycle["stale_pr_close_after_additional_days"]:
-            actions.append({"action": "CLOSE_STALE_PR", "number": pr.get("number")})
-        elif age >= lifecycle["stale_pr_after_days"] and "lifecycle:stale" not in labels:
-            actions.append({"action": "LABEL_STALE_PR", "number": pr.get("number")})
+        if (
+            age
+            >= lifecycle["stale_pr_after_days"]
+            + lifecycle["stale_pr_close_after_additional_days"]
+        ):
+            actions.append(
+                {"action": "CLOSE_STALE_PR", "number": pr.get("number")}
+            )
+        elif (
+            age >= lifecycle["stale_pr_after_days"]
+            and "lifecycle:stale" not in labels
+        ):
+            actions.append(
+                {"action": "LABEL_STALE_PR", "number": pr.get("number")}
+            )
 
     for issue in snapshot.get("issues", []):
         if issue.get("state") != "open":
@@ -336,14 +484,21 @@ def lifecycle_plan(snapshot: dict[str, Any], policy: dict[str, Any]) -> list[dic
         if "lifecycle:keep" in labels:
             continue
         age = issue.get("inactive_days", 0)
-        if age >= lifecycle["stale_issue_after_days"] and "lifecycle:stale" not in labels:
-            actions.append({"action": "LABEL_STALE_ISSUE", "number": issue.get("number")})
+        if (
+            age >= lifecycle["stale_issue_after_days"]
+            and "lifecycle:stale" not in labels
+        ):
+            actions.append(
+                {"action": "LABEL_STALE_ISSUE", "number": issue.get("number")}
+            )
         if (
             lifecycle.get("stale_issue_auto_close")
             and "lifecycle:auto-close" in labels
             and age >= lifecycle["stale_issue_after_days"]
         ):
-            actions.append({"action": "CLOSE_STALE_ISSUE", "number": issue.get("number")})
+            actions.append(
+                {"action": "CLOSE_STALE_ISSUE", "number": issue.get("number")}
+            )
 
     return actions
 
@@ -366,6 +521,23 @@ def main() -> int:
 
     release = sub.add_parser("release-validate")
     release.add_argument("manifest")
+
+    create_release = sub.add_parser("release-create")
+    create_release.add_argument("--application", required=True)
+    create_release.add_argument("--version", required=True)
+    create_release.add_argument("--stage", required=True)
+    create_release.add_argument("--source-sha", required=True)
+    create_release.add_argument("--build-id", required=True)
+    create_release.add_argument("--profile", required=True)
+    create_release.add_argument("--toolchain", required=True)
+    create_release.add_argument("--artifact", required=True)
+    create_release.add_argument("--gumball-version", required=True)
+    create_release.add_argument("--output", required=True)
+
+    promote_release = sub.add_parser("release-promote")
+    promote_release.add_argument("manifest")
+    promote_release.add_argument("--to", required=True)
+    promote_release.add_argument("--output", required=True)
 
     lifecycle = sub.add_parser("lifecycle-plan")
     lifecycle.add_argument("snapshot")
@@ -399,6 +571,47 @@ def main() -> int:
                 print(f"release: FAIL - {problem}")
             return 1
         print("release: PASS")
+        return 0
+
+    if args.command == "release-create":
+        manifest = create_release_manifest(
+            application=args.application,
+            version=args.version,
+            stage=args.stage,
+            source_sha=args.source_sha,
+            build_id=args.build_id,
+            profile=args.profile,
+            toolchain=args.toolchain,
+            artifact_path=Path(args.artifact),
+            gumball_version=args.gumball_version,
+        )
+        problems = validate_release_manifest(manifest, policy)
+        if problems:
+            for problem in problems:
+                print(f"release: FAIL - {problem}")
+            return 1
+        Path(args.output).write_text(
+            json.dumps(manifest, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(f"release: CREATED {args.output}")
+        return 0
+
+    if args.command == "release-promote":
+        manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+        try:
+            promoted = promote_release_manifest(manifest, args.to, policy)
+        except ValueError as exc:
+            print(f"release: FAIL - {exc}")
+            return 1
+        Path(args.output).write_text(
+            json.dumps(promoted, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        print(
+            "release: PROMOTED "
+            f"{manifest['application']['stage']} -> {args.to}"
+        )
         return 0
 
     if args.command == "lifecycle-plan":
