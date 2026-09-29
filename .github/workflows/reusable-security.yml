@@ -24,6 +24,11 @@ on:
         required: false
         type: boolean
         default: true
+      enable_docs_only_light_lane:
+        description: Skip heavyweight security jobs for trusted docs-only pull requests while retaining a successful security contract.
+        required: false
+        type: boolean
+        default: false
       dependency_fail_severity:
         required: false
         type: string
@@ -44,9 +49,92 @@ on:
 permissions: {}
 
 jobs:
+  plan:
+    name: Security cost plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    outputs:
+      run_heavy: ${{ steps.plan.outputs.run_heavy }}
+      classification: ${{ steps.plan.outputs.classification }}
+      reason: ${{ steps.plan.outputs.reason }}
+    steps:
+      - name: Checkout caller history for docs-only classification
+        if: ${{ inputs.enable_docs_only_light_lane && github.event_name == 'pull_request' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Plan heavyweight security evidence
+        id: plan
+        shell: bash
+        env:
+          LIGHT_LANE_ENABLED: ${{ inputs.enable_docs_only_light_lane }}
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          run_heavy=true
+          classification=full
+          reason="full security baseline"
+
+          if [[ "${LIGHT_LANE_ENABLED}" == "true" && "${EVENT_NAME}" == "pull_request" ]]; then
+            if [[ -z "${BASE_SHA}" || -z "${HEAD_SHA}" ]]; then
+              reason="missing pull-request SHAs; failed safe to full"
+            elif ! changed_paths="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"; then
+              reason="changed-path discovery failed; failed safe to full"
+            elif [[ -z "${changed_paths}" ]]; then
+              reason="empty change set; failed safe to full"
+            else
+              docs_only=true
+
+              while IFS= read -r path; do
+                [[ -z "${path}" ]] && continue
+
+                case "${path}" in
+                  .github/*|scripts/ci/*|SECURITY.md|*/SECURITY.md)
+                    docs_only=false
+                    break
+                    ;;
+                  docs/*|README.md|CHANGELOG.md|*.md)
+                    ;;
+                  *)
+                    docs_only=false
+                    break
+                    ;;
+                esac
+              done <<< "${changed_paths}"
+
+              if [[ "${docs_only}" == "true" ]]; then
+                run_heavy=false
+                classification=docs-only
+                reason="documentation-only pull request"
+              else
+                reason="non-documentation, mixed, CI-core, or security-policy change"
+              fi
+            fi
+          elif [[ "${LIGHT_LANE_ENABLED}" != "true" ]]; then
+            reason="docs-only light lane not enabled by caller"
+          else
+            reason="non-pull-request event always requires full security"
+          fi
+
+          echo "run_heavy=${run_heavy}" >> "${GITHUB_OUTPUT}"
+          echo "classification=${classification}" >> "${GITHUB_OUTPUT}"
+          echo "reason=${reason}" >> "${GITHUB_OUTPUT}"
+
+          printf 'security plan: classification=%s run_heavy=%s reason=%s\n' \
+            "${classification}" "${run_heavy}" "${reason}"
+
   dependency-review:
     name: Dependency review
-    if: ${{ inputs.enable_dependency_review && github.event_name == 'pull_request' }}
+    needs: plan
+    if: ${{ inputs.enable_dependency_review && github.event_name == 'pull_request' && needs.plan.outputs.run_heavy == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -67,7 +155,8 @@ jobs:
 
   codeql:
     name: CodeQL (${{ matrix.language }})
-    if: ${{ inputs.enable_codeql }}
+    needs: plan
+    if: ${{ inputs.enable_codeql && needs.plan.outputs.run_heavy == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -96,7 +185,8 @@ jobs:
 
   trivy:
     name: Trivy filesystem
-    if: ${{ inputs.enable_trivy }}
+    needs: plan
+    if: ${{ inputs.enable_trivy && needs.plan.outputs.run_heavy == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     permissions:
@@ -120,7 +210,8 @@ jobs:
 
   sbom:
     name: Source SBOM
-    if: ${{ inputs.enable_sbom && github.event_name != 'pull_request' }}
+    needs: plan
+    if: ${{ inputs.enable_sbom && github.event_name != 'pull_request' && needs.plan.outputs.run_heavy == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 12
     permissions:
