@@ -112,6 +112,7 @@ Example:
         "gumball_request_id": "$request_id"
       },
       "artifact_name": "proof-$proof-$sha",
+      "allowed_write_permissions": [],
       "automatic": {
         "enabled": false,
         "require_ci_class": "heavy"
@@ -156,6 +157,8 @@ Status-only query:
 Applying the configured proof label is an explicit request.
 
 The broker verifies that the actor has one of the configured repository permissions before dispatching.
+
+Automation/apps can be trusted explicitly through `defaults.trusted_actor_logins`. The default list is empty: Gumball never treats every bot as trusted. A consumer may add the exact login of its approved ChatGPT/Codex/GitHub App actor so an agent can request a proof without the human opening the Actions UI.
 
 ### Automatic
 
@@ -217,8 +220,9 @@ A broker-managed proof workflow must:
 - accept the configured exact-SHA input;
 - accept the configured request-id input;
 - include that request id in `run-name`;
-- use the exact requested source SHA for the proof;
-- run with the minimum permissions required;
+- use and reference the exact requested source-SHA input for the proof;
+- run read-only by default; any `*: write` workflow permission must be explicitly allow-listed in the proof policy;
+- never use `permissions: write-all`;
 - produce the configured artifact name when artifact reuse is enabled.
 
 Example shape:
