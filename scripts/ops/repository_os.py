@@ -152,6 +152,40 @@ def plan_ci(paths: list[str]) -> dict[str, Any]:
     }
 
 
+def heavy_build_decision(
+    ci_plan: dict[str, Any],
+    *,
+    artifact_available: bool,
+    merge_critical: bool,
+    release_event: bool,
+) -> dict[str, Any]:
+    if not ci_plan.get("heavy_build"):
+        return {
+            "action": "SKIP",
+            "reason": "no heavyweight build required by impact plan",
+        }
+    if artifact_available:
+        return {
+            "action": "REUSE",
+            "reason": "verified artifact exists for exact build fingerprint",
+        }
+    if merge_critical or release_event:
+        return {
+            "action": "BUILD",
+            "reason": "heavy proof is required and no reusable artifact exists",
+        }
+    return {
+        "action": "DEFER",
+        "reason": "non-merge-critical heavy proof moves to manual/release/nightly lane",
+    }
+
+
+def artifact_name(fingerprint: str) -> str:
+    if not SHA256.fullmatch(fingerprint):
+        raise ValueError("build fingerprint must be a 64-character lowercase SHA-256")
+    return f"gumball-build-{fingerprint}"
+
+
 def classify_pr(title: str, paths: list[str]) -> dict[str, Any]:
     normalized = title.strip().lower()
     prefix = normalized.split(":", 1)[0].split("(", 1)[0]
@@ -511,6 +545,12 @@ def main() -> int:
     ci = sub.add_parser("ci-plan")
     ci.add_argument("paths", nargs="*")
 
+    decision = sub.add_parser("ci-decision")
+    decision.add_argument("--artifact-available", action="store_true")
+    decision.add_argument("--merge-critical", action="store_true")
+    decision.add_argument("--release-event", action="store_true")
+    decision.add_argument("paths", nargs="*")
+
     labels = sub.add_parser("labels-plan")
     labels.add_argument("--title", required=True)
     labels.add_argument("paths", nargs="*")
@@ -547,6 +587,16 @@ def main() -> int:
 
     if args.command == "ci-plan":
         print(json.dumps(plan_ci(args.paths), indent=2))
+        return 0
+
+    if args.command == "ci-decision":
+        ci_plan = plan_ci(args.paths)
+        print(json.dumps(heavy_build_decision(
+            ci_plan,
+            artifact_available=args.artifact_available,
+            merge_critical=args.merge_critical,
+            release_event=args.release_event,
+        ), indent=2))
         return 0
 
     if args.command == "labels-plan":
