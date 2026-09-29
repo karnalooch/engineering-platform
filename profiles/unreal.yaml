@@ -5,5 +5,7 @@ capabilities:
   generated_directory_guard: required
   toolchain_build_proof: consumer_owned
   runtime_visual_proof: explicit_lane
+  build_fingerprint: required
+  artifact_fingerprint_reuse: required
 heavy_pr_proofs: disabled_by_default
-
+automatic_heavy_build_lanes_max: 1
