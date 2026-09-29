@@ -12,7 +12,8 @@
     "require_request_id_run_name": true,
     "manual_workflow_dispatch_fallback": true,
     "reconcile_interval_minutes": 60,
-    "status_label_template": "proof-status:$proof:$status"
+    "status_label_template": "proof-status:$proof:$status",
+    "trusted_actor_logins": []
   },
   "proofs": {
     "example-heavy-proof": {
