@@ -2,9 +2,12 @@ profile: release-critical
 extends: standard
 capabilities:
   full_release_gate: required
-  artifact_provenance: recommended
+  artifact_provenance: required
+  release_manifest: required
+  semantic_version: required
+  stage_promotion: required
+  build_once_promote_many: required
   release_evidence: required
   deployment_proof: consumer_owned
 pr_merge_gate: aggregate
 release_gate: explicit
-
