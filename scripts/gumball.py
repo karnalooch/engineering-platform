@@ -134,6 +134,10 @@ def _detect_capabilities(root: Path) -> dict[str, bool]:
         or bool(list(root.glob("**/Dockerfile*")))
         or bool(list(root.glob("docker-compose*.yml")))
         or bool(list(root.glob("compose*.yml"))),
+        "mcp_config": any(
+            (root / candidate).exists()
+            for candidate in (".mcp.json", "mcp.json", ".cursor/mcp.json", ".vscode/mcp.json")
+        ),
     }
 
 
@@ -182,6 +186,8 @@ def plan_repository(audit: dict[str, Any]) -> list[dict[str, str]]:
         actions.append({"action": "PLAN", "path": "unreal profile", "reason": "Unreal project detected; keep runtime/visual proof consumer-owned"})
     if audit["capabilities"]["mobile"]:
         actions.append({"action": "PLAN", "path": "mobile profile", "reason": "mobile/native surface detected; separate PR smoke from release proof"})
+    if audit["capabilities"]["mcp_config"]:
+        actions.append({"action": "KEEP", "path": "MCP/tool config", "reason": "existing MCP configuration detected; preserve endpoints/secrets and map capabilities instead of replacing it"})
 
     return actions
 
