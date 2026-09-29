@@ -219,7 +219,7 @@ def _gumball_self_problems(root: Path) -> list[str]:
 
     version = (root / "VERSION").read_text(encoding="utf-8").strip()
     config_text = (root / "gumball.yaml").read_text(encoding="utf-8")
-    match = re.search(r"^platform_version:\\s*([^\\s#]+)", config_text, re.MULTILINE)
+    match = re.search(r"^platform_version:\s*([^\s#]+)", config_text, re.MULTILINE)
     if not match:
         problems.append("gumball.yaml platform_version is missing")
     elif match.group(1) != version:
