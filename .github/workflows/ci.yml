@@ -78,6 +78,7 @@ jobs:
           python scripts/gumball.py doctor
           python scripts/ci/check_docs_index.py
           python -m unittest scripts/ci/test_gumball.py -v
+          python -m unittest scripts/ci/test_ci_primitives.py -v
 
       - name: Test fail-closed governance and auto-merge policy
         run: |
