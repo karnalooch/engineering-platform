@@ -12,14 +12,7 @@
     "require_request_id_run_name": true,
     "manual_workflow_dispatch_fallback": true,
     "reconcile_interval_minutes": 60,
-    "status_labels": {
-      "running": "proof-status:running",
-      "passed": "proof-status:passed",
-      "failed": "proof-status:failed",
-      "deferred": "proof-status:deferred",
-      "reused": "proof-status:reused",
-      "requested": "proof-status:requested"
-    }
+    "status_label_template": "proof-status:$proof:$status"
   },
   "proofs": {
     "example-heavy-proof": {
