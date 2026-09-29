@@ -54,6 +54,15 @@ jobs:
         docs/UPSTREAM_PROMOTION.md
         docs/ONE_PROMPT_BOOTSTRAP.md
         docs/MCP_AND_TOOLS.md
+        docs/REPOSITORY_LIFECYCLE.md
+        docs/PROJECTS_FLOW.md
+        docs/RELEASE_LINEAGE.md
+        docs/LABELS.md
+        docs/CI_COST_GOVERNOR.md
+        .gumball/repository-os.json
+        scripts/ops/**
+        templates/release-manifest.json
+        .github/workflows/repository-ops.yml
 
   workflow-contract:
     name: Workflow contract
@@ -81,6 +90,8 @@ jobs:
           python scripts/gumball.py promote
           python scripts/ci/check_docs_index.py
           python -m unittest scripts/ci/test_gumball.py -v
+          python -m unittest scripts/ci/test_repository_os.py -v
+          python -m unittest scripts/ci/test_github_ops.py -v
           python -m unittest scripts/ci/test_ci_primitives.py -v
 
       - name: Test fail-closed governance and auto-merge policy
