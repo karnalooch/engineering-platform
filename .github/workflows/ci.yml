@@ -59,10 +59,13 @@ jobs:
         docs/RELEASE_LINEAGE.md
         docs/LABELS.md
         docs/CI_COST_GOVERNOR.md
+        docs/PROOF_BROKER.md
         .gumball/repository-os.json
+        .gumball/proof-broker.json
         scripts/ops/**
         templates/release-manifest.json
         .github/workflows/repository-ops.yml
+        .github/workflows/proof-broker.yml
 
   workflow-contract:
     name: Workflow contract
@@ -92,8 +95,11 @@ jobs:
           python -m unittest scripts/ci/test_gumball.py -v
           python -m unittest scripts/ci/test_repository_os.py -v
           python -m unittest scripts/ci/test_github_ops.py -v
+          python -m unittest scripts/ci/test_proof_broker.py -v
           python scripts/ops/repository_os.py --help
           python scripts/ops/github_ops.py --help
+          python scripts/ops/proof_broker.py validate
+          python scripts/ops/proof_broker.py --help
           python -m unittest scripts/ci/test_ci_primitives.py -v
 
       - name: Test fail-closed governance and auto-merge policy
