@@ -93,6 +93,16 @@ jobs:
             self.assertEqual(safety[1], "FAIL")
             self.assertIn("not pinned", safety[2])
 
+    def test_audit_detects_existing_mcp_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".cursor").mkdir()
+            (root / ".cursor" / "mcp.json").write_text("{}", encoding="utf-8")
+
+            audit = gumball.audit_repository(root)
+
+            self.assertTrue(audit["capabilities"]["mcp_config"])
+
     def test_candidate_contract(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
