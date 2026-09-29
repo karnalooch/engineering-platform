@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github" / "workflows"
 IMMUTABLE_SHA = re.compile(r"^[0-9a-f]{40}$")
-USES = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
+USES = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)", re.MULTILINE)
 FAIL_OPEN = re.compile(
     r"^\s*continue-on-error:\s*true\s*(?:#.*)?$",
     re.IGNORECASE | re.MULTILINE,
