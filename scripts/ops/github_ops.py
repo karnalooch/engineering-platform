@@ -398,6 +398,24 @@ query($id: ID!) {
 """
 
 
+CLOSING_ISSUES_QUERY = """
+query($id: ID!) {
+  node(id: $id) {
+    ... on PullRequest {
+      closingIssuesReferences(first: 50) {
+        nodes {
+          id
+          number
+          state
+          repository { nameWithOwner }
+          labels(first: 50) { nodes { name } }
+        }
+      }
+    }
+  }
+}
+"""
+
 PROJECT_ITEMS_QUERY = """
 query($project: ID!, $after: String) {
   node(id: $project) {
@@ -583,6 +601,41 @@ def _event_item(event: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
     return None
 
 
+def _closing_issues_from_pr(
+    repo: str,
+    token: str,
+    pr: dict[str, Any],
+) -> list[dict[str, Any]]:
+    issues: dict[int, dict[str, Any]] = {}
+    try:
+        data = graphql(token, CLOSING_ISSUES_QUERY, {"id": pr["node_id"]})
+        nodes = (
+            ((data.get("node") or {}).get("closingIssuesReferences") or {})
+            .get("nodes", [])
+        )
+        for issue in nodes:
+            if (issue.get("repository") or {}).get("nameWithOwner") == repo:
+                issues[int(issue["number"])] = issue
+    except GitHubError:
+        pass
+
+    body = pr.get("body") or ""
+    for raw_number in CLOSING_REF.findall(body):
+        number = int(raw_number)
+        if number in issues:
+            continue
+        issue = request(token, "GET", f"/repos/{repo}/issues/{number}")
+        issues[number] = {
+            "id": issue["node_id"],
+            "number": issue["number"],
+            "state": issue["state"],
+            "labels": {"nodes": issue.get("labels", [])},
+            "repository": {"nameWithOwner": repo},
+        }
+
+    return [issues[number] for number in sorted(issues)]
+
+
 def project_event(
     repo: str,
     token: str,
@@ -613,8 +666,6 @@ def project_event(
 
     pr = event.get("pull_request")
     if pr:
-        body = pr.get("body") or ""
-        issue_numbers = sorted({int(match) for match in CLOSING_REF.findall(body)})
         linked_model = {
             "kind": "issue",
             "state": "open",
@@ -624,13 +675,15 @@ def project_event(
                 "draft": pr.get("draft", False),
             },
         }
-        for number in issue_numbers:
-            issue = request(token, "GET", f"/repos/{repo}/issues/{number}")
-            linked_model["state"] = issue.get("state")
-            linked_model["labels"] = [label["name"] for label in issue.get("labels", [])]
+        for issue in _closing_issues_from_pr(repo, token, pr):
+            linked_model["state"] = str(issue.get("state", "open")).lower()
+            linked_model["labels"] = [
+                label["name"]
+                for label in (issue.get("labels") or {}).get("nodes", [])
+            ]
             result.append(
                 sync_project_content(
-                    content_id=issue["node_id"],
+                    content_id=issue["id"],
                     item_model=dict(linked_model),
                     token=project_token,
                     policy=policy,
