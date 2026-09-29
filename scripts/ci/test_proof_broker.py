@@ -405,6 +405,57 @@ class BrokerDecisionTests(unittest.TestCase):
         rerun.assert_called_once_with("owner/repo", "token", 19)
 
 
+class EventTests(unittest.TestCase):
+    def test_repository_dispatch_drives_automatic_policy(self):
+        event = {
+            "client_payload": {
+                "proof": "geometry",
+                "pr_number": 23,
+            }
+        }
+        with mock.patch.object(
+            proof_broker,
+            "evaluate_proof",
+            return_value={"action": "DEFER", "proof": "geometry", "pr_number": 23},
+        ) as evaluate:
+            results = proof_broker.handle_event(
+                "owner/repo",
+                "token",
+                enabled_policy(automatic=True),
+                "repository_dispatch",
+                event,
+                apply=True,
+            )
+
+        self.assertEqual(results[0][0]["action"], "DEFER")
+        kwargs = evaluate.call_args.kwargs
+        self.assertFalse(kwargs["explicit"])
+        self.assertEqual(kwargs["pr_number"], 23)
+
+    def test_comment_request_is_explicit(self):
+        event = {
+            "issue": {"number": 23, "pull_request": {}},
+            "comment": {"body": "/gumball proof geometry"},
+            "sender": {"login": "owner"},
+        }
+        with mock.patch.object(
+            proof_broker,
+            "evaluate_proof",
+            return_value={"action": "DISPATCH", "proof": "geometry", "pr_number": 23},
+        ) as evaluate:
+            results = proof_broker.handle_event(
+                "owner/repo",
+                "token",
+                enabled_policy(),
+                "issue_comment",
+                event,
+                apply=True,
+            )
+
+        self.assertTrue(results[0][1])
+        self.assertTrue(evaluate.call_args.kwargs["explicit"])
+
+
 class StatusLabelTests(unittest.TestCase):
     def test_status_update_preserves_other_proof_status(self):
         policy = enabled_policy()
@@ -451,6 +502,8 @@ class BrokerWorkflowSafetyTests(unittest.TestCase):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("pull_request_target:", text)
         self.assertIn("issue_comment:", text)
+        self.assertIn("repository_dispatch:", text)
+        self.assertNotIn("      - synchronize", text)
         self.assertIn("ref: ${{ github.event.repository.default_branch }}", text)
         self.assertIn("persist-credentials: false", text)
         self.assertNotIn("ref: ${{ github.event.pull_request.head.sha }}", text)
