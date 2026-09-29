@@ -79,6 +79,14 @@ class GumballCiPlannerTests(unittest.TestCase):
         )
         self.assertTrue(plan.security_required)
 
+    def test_security_policy_document_forces_full_security(self):
+        plan = plan_gumball_ci.plan_for_event(
+            "pull_request",
+            ["SECURITY.md"],
+        )
+        self.assertEqual("full", plan.classification)
+        self.assertTrue(plan.security_required)
+
     def test_mixed_docs_and_code_forces_full_security(self):
         plan = plan_gumball_ci.plan_for_event(
             "pull_request",
