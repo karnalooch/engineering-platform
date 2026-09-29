@@ -28,6 +28,7 @@ class GumballTests(unittest.TestCase):
             self.assertTrue((root / "gumball.yaml").exists())
             self.assertTrue((root / "docs" / "README.md").exists())
             self.assertTrue((root / "docs" / "DIAGRAM_STYLE.md").exists())
+            self.assertTrue((root / ".gumball" / "repository-os.json").exists())
 
     def test_doctor_accepts_minimal_fail_closed_repository(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -38,6 +39,8 @@ class GumballTests(unittest.TestCase):
             (root / "AGENTS.md").write_text("# rules\n", encoding="utf-8")
             (root / "docs" / "README.md").write_text("# docs\n", encoding="utf-8")
             (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\n", encoding="utf-8")
+            (root / ".gumball").mkdir(exist_ok=True)
+            (root / ".gumball" / "repository-os.json").write_text("{}\n", encoding="utf-8")
             (root / ".github" / "workflows" / "ci.yml").write_text(
                 """name: CI
 permissions: {}
@@ -70,6 +73,8 @@ jobs:
             (root / "AGENTS.md").write_text("# rules\n", encoding="utf-8")
             (root / "docs" / "README.md").write_text("# docs\n", encoding="utf-8")
             (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\n", encoding="utf-8")
+            (root / ".gumball").mkdir(exist_ok=True)
+            (root / ".gumball" / "repository-os.json").write_text("{}\n", encoding="utf-8")
             (root / ".github" / "workflows" / "ci.yml").write_text(
                 """name: CI
 permissions: {}
