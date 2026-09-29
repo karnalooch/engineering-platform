@@ -43,6 +43,7 @@ When `gumball doctor` detects the Gumball source repository, it additionally req
 
 - this dogfooding contract;
 - the Gumball tool capability manifest;
+- the shared Blueprint diagram style contract that is also propagated to consumers;
 - at least one platform promotion provenance record;
 - Gumball CI to invoke `gumball doctor`;
 - Gumball CI to invoke `gumball promote`;
