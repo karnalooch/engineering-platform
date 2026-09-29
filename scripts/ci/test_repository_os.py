@@ -43,6 +43,26 @@ class CiCostTests(unittest.TestCase):
         plan = repository_os.plan_ci([])
         self.assertEqual(plan["class"], "standard")
 
+    def test_heavy_build_reuses_verified_artifact(self):
+        plan = repository_os.plan_ci(["Source/Game/Foo.cpp"])
+        decision = repository_os.heavy_build_decision(
+            plan,
+            artifact_available=True,
+            merge_critical=True,
+            release_event=False,
+        )
+        self.assertEqual(decision["action"], "REUSE")
+
+    def test_noncritical_heavy_proof_is_deferred(self):
+        plan = repository_os.plan_ci(["Source/Game/Foo.cpp"])
+        decision = repository_os.heavy_build_decision(
+            plan,
+            artifact_available=False,
+            merge_critical=False,
+            release_event=False,
+        )
+        self.assertEqual(decision["action"], "DEFER")
+
     def test_fingerprint_is_stable_for_input_order(self):
         first = repository_os.build_fingerprint(
             source_sha="a" * 40,
