@@ -256,6 +256,7 @@ def _gumball_self_problems(root: Path) -> list[str]:
         "python scripts/ci/check_docs_index.py",
         "python -m unittest scripts/ci/test_gumball.py -v",
         "python -m unittest scripts/ci/test_repository_os.py -v",
+        "python -m unittest scripts/ci/test_github_ops.py -v",
     )
     for marker in required_ci_markers:
         if marker not in ci_text:
@@ -379,11 +380,15 @@ Project-specific extensions are allowed. Reusable visual conventions should be e
 """
 
 
+def _source_file(relative: str) -> str:
+    source = Path(__file__).resolve().parents[1] / relative
+    if source.is_file():
+        return source.read_text(encoding="utf-8")
+    raise RuntimeError(f"canonical Gumball source file is unavailable: {relative}")
+
+
 def _generated_repository_os() -> str:
-    canonical = Path(__file__).resolve().parents[1] / ".gumball" / "repository-os.json"
-    if canonical.is_file():
-        return canonical.read_text(encoding="utf-8")
-    raise RuntimeError("canonical .gumball/repository-os.json is unavailable")
+    return _source_file(".gumball/repository-os.json")
 
 
 def _generated_docs_index() -> str:
@@ -415,6 +420,10 @@ def apply_baseline(root: Path, profile: str, write: bool) -> list[tuple[str, str
         (root / "docs" / "README.md", _generated_docs_index()),
         (root / "docs" / "DIAGRAM_STYLE.md", _generated_diagram_style()),
         (root / ".gumball" / "repository-os.json", _generated_repository_os()),
+        (root / "scripts" / "ops" / "repository_os.py", _source_file("scripts/ops/repository_os.py")),
+        (root / "scripts" / "ops" / "github_ops.py", _source_file("scripts/ops/github_ops.py")),
+        (root / ".github" / "workflows" / "repository-ops.yml", _source_file(".github/workflows/repository-ops.yml")),
+        (root / "templates" / "release-manifest.json", _source_file("templates/release-manifest.json")),
         (root / ".gumball" / "candidates" / "README.md",
          "# Gumball promotion candidates\n\nRecord reusable downstream engineering improvements here.\n"),
     ]
