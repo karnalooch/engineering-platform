@@ -72,9 +72,10 @@ Gumball-enabled repositories should keep work surfaces and release evidence fini
 - releasable application artifacts carry exact version, stage, source SHA and artifact digest;
 - promote the same verified artifact between stages rather than rebuilding;
 - plan CI cost before starting heavy work and reuse a verified build fingerprint when possible;
-- heavyweight runtime/visual/hardware proofs are deferred to explicit lanes unless merge-critical.
+- heavyweight runtime/visual/hardware proofs are deferred to explicit lanes unless merge-critical;
+- broker-managed heavy proofs are requested by policy/label/comment, bind the exact PR SHA, dedupe/reuse existing work, and keep manual workflow_dispatch only as fallback.
 
-Read `docs/REPOSITORY_LIFECYCLE.md`, `docs/PROJECTS_FLOW.md`, `docs/RELEASE_LINEAGE.md`, `docs/LABELS.md` and `docs/CI_COST_GOVERNOR.md` before changing those contracts.
+Read `docs/REPOSITORY_LIFECYCLE.md`, `docs/PROJECTS_FLOW.md`, `docs/RELEASE_LINEAGE.md`, `docs/LABELS.md`, `docs/CI_COST_GOVERNOR.md` and `docs/PROOF_BROKER.md` before changing those contracts.
 
 ## Validation
 
