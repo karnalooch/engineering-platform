@@ -61,7 +61,7 @@ Every releasable artifact should have a machine-readable manifest containing at 
   "source": {"sha": "<40-char sha>"},
   "build": {"id": "provider-build-id", "profile": "release"},
   "artifact": {"name": "example", "sha256": "<digest>"},
-  "provenance": {"gumball_version": "0.4.0"}
+  "provenance": {"gumball_version": "0.5.0"}
 }
 ```
 
@@ -94,3 +94,32 @@ Promotion to a later stage requires:
 
 Stable release is a provenance event, not merely a Git tag.
 
+
+## Commands
+
+Create a release manifest from the actual artifact bytes:
+
+```bash
+python scripts/ops/repository_os.py release-create \
+  --application my-app \
+  --version 1.4.0 \
+  --stage beta \
+  --source-sha <40-char-sha> \
+  --build-id <provider-build-id> \
+  --profile release \
+  --toolchain <toolchain-id> \
+  --artifact path/to/artifact \
+  --gumball-version 0.5.0 \
+  --output release-manifest.json
+```
+
+Promote the exact same artifact without rebuilding:
+
+```bash
+python scripts/ops/repository_os.py release-promote \
+  release-manifest.json \
+  --to rc \
+  --output release-manifest.rc.json
+```
+
+The promoted manifest preserves source SHA, build identity and artifact SHA-256 and records `artifact_rebuilt=false`.
