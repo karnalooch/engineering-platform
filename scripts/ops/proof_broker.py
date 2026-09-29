@@ -504,16 +504,21 @@ def ensure_labels(
         item["name"]: item
         for item in github_ops.paginate(token, f"/repos/{repo}/labels")
     }
-    definitions: dict[str, tuple[str, str]] = {
-        name: (color, STATUS_DESCRIPTIONS[name])
-        for name, color in STATUS_COLORS.items()
-    }
+    definitions: dict[str, tuple[str, str]] = {}
     for proof_id, proof in policy.get("proofs", {}).items():
+        if not isinstance(proof, dict):
+            continue
         label = proof.get("label")
         if isinstance(label, str):
             definitions[label] = (
                 "8250DF",
                 f"Request Gumball proof {proof_id}",
+            )
+        for status, color in STATUS_COLORS.items():
+            status_label = status_label_name(policy, proof_id, status)
+            definitions[status_label] = (
+                color,
+                f"{STATUS_DESCRIPTIONS[status]} ({proof_id})",
             )
 
     messages: list[str] = []
@@ -553,7 +558,9 @@ def set_status_label(
     repo: str,
     token: str,
     pr_number: int,
-    status_label: str | None,
+    policy: dict[str, Any],
+    proof_id: str,
+    status: str | None,
     apply: bool,
 ) -> None:
     issue = github_ops.request(token, "GET", f"/repos/{repo}/issues/{pr_number}")
@@ -564,11 +571,13 @@ def set_status_label(
         for label in issue.get("labels", [])
         if isinstance(label, dict) and isinstance(label.get("name"), str)
     ]
-    target = [
-        label for label in current if not label.startswith("proof-status:")
-    ]
-    if status_label:
-        target.append(status_label)
+    owned = {
+        status_label_name(policy, proof_id, candidate)
+        for candidate in STATUS_COLORS
+    }
+    target = [label for label in current if label not in owned]
+    if status:
+        target.append(status_label_name(policy, proof_id, status))
     target = sorted(set(target))
     if apply and sorted(current) != target:
         github_ops.request(
