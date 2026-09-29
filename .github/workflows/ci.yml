@@ -28,6 +28,10 @@ jobs:
     with:
       additional_high_risk_patterns: |
         scripts/**
+        AGENTS.md
+        gumball.yaml
+        profiles/**
+        .gumball/**
         .gitattributes
         .gitmodules
         LICENSE
@@ -41,6 +45,13 @@ jobs:
         docs/ROLLOUT.md
         docs/VERSIONING.md
         docs/AUTO_MERGE.md
+        docs/README.md
+        docs/ARCHITECTURE.md
+        docs/ADOPTION.md
+        docs/CI_MODEL.md
+        docs/UPSTREAM_PROMOTION.md
+        docs/ONE_PROMPT_BOOTSTRAP.md
+        docs/MCP_AND_TOOLS.md
 
   workflow-contract:
     name: Workflow contract
