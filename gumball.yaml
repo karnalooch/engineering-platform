@@ -1,0 +1,38 @@
+schema_version: 1
+name: Gumball
+platform_version: 0.4.0
+
+adoption:
+  mode: preserve-local
+  flow:
+    - audit
+    - plan
+    - apply
+    - verify
+
+ci:
+  aggregate_gate: caller-local
+  fail_closed: true
+  anti_noop: true
+  expensive_pr_proofs: false
+
+governance:
+  immutable_external_refs: true
+  least_privilege_permissions: true
+  preserve_stronger_local_controls: true
+
+docs:
+  index_required: true
+  ssot_map_required: true
+
+agents:
+  enabled: true
+  preserve_local_instructions: true
+  evaluate_upstream_promotion: true
+
+promotion:
+  states:
+    - candidate
+    - proven
+    - platform
+
