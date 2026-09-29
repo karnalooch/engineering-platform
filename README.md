@@ -43,6 +43,11 @@ Application code and product-specific runtime proof stay in product repositories
 - [Downstream -> upstream promotion](docs/UPSTREAM_PROMOTION.md)
 - [One-prompt bootstrap](docs/ONE_PROMPT_BOOTSTRAP.md)
 - [MCP and tool capability contract](docs/MCP_AND_TOOLS.md)
+- [Repository lifecycle](docs/REPOSITORY_LIFECYCLE.md)
+- [GitHub Projects flow](docs/PROJECTS_FLOW.md)
+- [Release and artifact lineage](docs/RELEASE_LINEAGE.md)
+- [Labels contract](docs/LABELS.md)
+- [CI Cost Governor](docs/CI_COST_GOVERNOR.md)
 
 ## CLI
 
@@ -58,6 +63,16 @@ python scripts/gumball.py promote
 ```
 
 `apply` is dry-run by default and only creates missing baseline files. It never overwrites an existing `AGENTS.md`, docs index or Gumball config.
+
+Repository OS primitives:
+
+```bash
+python scripts/ops/repository_os.py ci-plan docs/README.md
+python scripts/ops/repository_os.py labels-plan --title "feat: example" .github/workflows/ci.yml
+python scripts/ops/repository_os.py release-create --help
+python scripts/ops/repository_os.py release-promote --help
+python scripts/ops/github_ops.py --help
+```
 
 ## Existing reusable contracts
 
@@ -86,3 +101,15 @@ Callers pin reusable workflows to a reviewed immutable commit SHA. Do **not** co
 The final `Aggregate CI gate` stays local to every consumer so application-specific checks cannot be silently dropped by a shared workflow.
 
 See [CONTRACT.md](docs/CONTRACT.md) for the executable caller contract.
+
+## Repository OS
+
+Gumball v0.5 adds a repository operating layer:
+
+- stale/merged branch, PR and issue lifecycle;
+- GitHub Projects status reconciliation;
+- canonical PR labels;
+- application version/stage/artifact lineage;
+- CI Cost Governor with heavy-build fingerprint reuse.
+
+The trusted `.github/workflows/repository-ops.yml` workflow runs default-branch code only. Projects integration is disabled until a consumer supplies project owner/number and an authorized Project token.
