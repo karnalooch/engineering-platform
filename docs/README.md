@@ -41,6 +41,11 @@ The graph follows the shared [Blueprint diagram style](DIAGRAM_STYLE.md), inspir
 | Understand the platform shape | [ARCHITECTURE.md](ARCHITECTURE.md) | **Authoritative** |
 | Understand Gumball self-application | [DOGFOODING.md](DOGFOODING.md) | **Authoritative** |
 | Use the shared Blueprint diagram language | [DIAGRAM_STYLE.md](DIAGRAM_STYLE.md) | **Authoritative** |
+| Keep branches, PRs and issues orderly | [REPOSITORY_LIFECYCLE.md](REPOSITORY_LIFECYCLE.md) | **Authoritative** |
+| Reconcile GitHub Projects flow | [PROJECTS_FLOW.md](PROJECTS_FLOW.md) | **Authoritative** |
+| Version apps and promote artifacts | [RELEASE_LINEAGE.md](RELEASE_LINEAGE.md) | **Authoritative** |
+| Apply the shared label taxonomy | [LABELS.md](LABELS.md) | **Authoritative** |
+| Minimize heavy CI/build work | [CI_COST_GOVERNOR.md](CI_COST_GOVERNOR.md) | **Authoritative** |
 | Adopt Gumball in a repository | [ADOPTION.md](ADOPTION.md) | **Authoritative** |
 | Understand PR vs release/full CI | [CI_MODEL.md](CI_MODEL.md) | **Authoritative** |
 | Promote a downstream improvement upstream | [UPSTREAM_PROMOTION.md](UPSTREAM_PROMOTION.md) | **Authoritative** |
@@ -63,6 +68,9 @@ The graph follows the shared [Blueprint diagram style](DIAGRAM_STYLE.md), inspir
 7. **Downstream innovation flows upstream.** Promote reusable invariants, not project-specific scripts.
 8. **Immutable execution.** External Actions and shared workflow consumption use reviewed immutable SHAs.
 9. **Shared visual language.** New or substantially revised architecture/workflow diagrams use the Gumball Blueprint style unless the project owns a stronger explicit convention.
+10. **Repository lifecycle is finite.** Merged branches, stale PRs/issues and Project cards are reconciled instead of accumulating forever.
+11. **Build once, promote many.** Application versions, delivery stages and artifact digests remain traceable to one exact source revision.
+12. **Classify before computing.** Gumball plans the smallest trustworthy CI proof set before starting heavy builds.
 
 ## Current compatibility note
 
