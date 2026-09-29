@@ -10,7 +10,7 @@ Available initial profiles:
 - `unreal.yaml` — LFS, toolchain and expensive runtime-proof guidance;
 - `release-critical.yaml` — explicit full/release validation.
 
-All profiles inherit repository lifecycle, shared PR labels and the CI Cost Governor from `standard`. Release-capable profiles add artifact/version lineage and build-once/promote-many rules.
+All profiles inherit repository lifecycle, shared PR labels, the CI Cost Governor and Proof Broker support from `standard`. Unreal requires the broker for heavy runtime/visual proof; mobile recommends it for native proof; release-critical requires it whenever heavyweight proof is broker-managed. Release-capable profiles add artifact/version lineage and build-once/promote-many rules.
 
 Profiles may strengthen the baseline. They must not disable Gumball's fail-closed invariants.
 
