@@ -17,7 +17,8 @@
       "passed": "proof-status:passed",
       "failed": "proof-status:failed",
       "deferred": "proof-status:deferred",
-      "reused": "proof-status:reused"
+      "reused": "proof-status:reused",
+      "requested": "proof-status:requested"
     }
   },
   "proofs": {
