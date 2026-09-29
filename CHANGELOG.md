@@ -9,13 +9,15 @@ All notable Gumball / engineering-platform contract changes are recorded here.
 - add `docs/README.md` as an authoritative documentation router and promote the docs-index contract proven in YACS;
 - add Gumball architecture, adoption, CI-cost/proof, MCP/tooling and one-prompt bootstrap contracts;
 - add profile presets for standard, monorepo, mobile, Unreal and release-critical repositories;
+- add a tool/MCP capability manifest and conservative discovery of existing MCP configuration without copying private endpoints or secrets;
 - add a standard-library-only `gumball` helper with `audit`, `plan`, `apply`, `doctor` and `promote`;
 - make `apply` dry-run by default and non-destructive: existing AGENTS/docs/config files are preserved;
 - add a formal `.gumball/candidates/` contract so reusable improvements discovered downstream can be promoted back into Gumball;
 - promote the 4VELO fail-closed dynamic aggregate pattern into `scripts/ci/evaluate_aggregate.py`;
 - add `scripts/ci/assert_nonempty.py` to prevent false-green zero-work CI selectors;
 - self-test Gumball bootstrap, promotion, aggregate and anti-no-op contracts in platform CI;
-- classify Gumball policy/config files as high-risk governance surfaces.
+- classify Gumball policy/config files as high-risk governance surfaces;
+- close a pre-existing immutable-ref scanning gap so valid YAML inline list syntax such as `- uses: action@ref` is also checked.
 
 Canonical consumer SHA: assigned from the v0.4.0 merge commit after merge.
 
