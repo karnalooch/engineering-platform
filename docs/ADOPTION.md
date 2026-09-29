@@ -30,7 +30,11 @@ Discover the actual repository before proposing changes:
 - security tooling;
 - release/runtime/hardware/visual proof;
 - repository-specific automation;
-- existing Gumball/engineering-platform pins.
+- existing Gumball/engineering-platform pins;
+- open branch/PR/issue lifecycle and GitHub Projects usage;
+- application version sources, delivery stages and artifact provenance;
+- existing PR label taxonomy;
+- heavyweight CI/build lanes and their current cost/reuse behavior.
 
 Do not infer a missing rule from the absence of a familiar filename.
 
@@ -65,7 +69,11 @@ A migration is incomplete until:
 - existing project tests/gates still pass;
 - documentation describes the resulting state;
 - no required check was weakened or silently skipped;
-- immutable shared-workflow pins are recorded.
+- immutable shared-workflow pins are recorded;
+- `.gumball/repository-os.json` documents lifecycle, labels, release lineage and CI cost policy;
+- trusted repository-ops automation is present when the project opts into automatic reconciliation;
+- release-capable profiles can generate and validate artifact manifests;
+- heavy build lanes have an explicit reuse/defer strategy.
 
 ## Profiles
 
