@@ -29,6 +29,10 @@ class GumballTests(unittest.TestCase):
             self.assertTrue((root / "docs" / "README.md").exists())
             self.assertTrue((root / "docs" / "DIAGRAM_STYLE.md").exists())
             self.assertTrue((root / ".gumball" / "repository-os.json").exists())
+            self.assertTrue((root / "scripts" / "ops" / "repository_os.py").exists())
+            self.assertTrue((root / "scripts" / "ops" / "github_ops.py").exists())
+            self.assertTrue((root / ".github" / "workflows" / "repository-ops.yml").exists())
+            self.assertTrue((root / "templates" / "release-manifest.json").exists())
 
     def test_doctor_accepts_minimal_fail_closed_repository(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -137,6 +141,34 @@ jobs:
             dogfood = next(item for item in checks if item[0] == "Gumball dogfooding")
             self.assertEqual(dogfood[1], "FAIL")
             self.assertIn("DOGFOODING.md", dogfood[2])
+
+    def test_gumball_source_detects_version_drift(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+            (root / ".github" / "workflows").mkdir(parents=True)
+            (root / ".gumball").mkdir()
+            (root / "VERSION").write_text("0.5.0\n", encoding="utf-8")
+            (root / "gumball.yaml").write_text(
+                "platform_version: 0.4.0\n",
+                encoding="utf-8",
+            )
+            (root / "scripts" / "gumball.py").write_text("# source\n", encoding="utf-8")
+            (root / ".github" / "workflows" / "reusable-governance.yml").write_text(
+                "name: reusable\npermissions: {}\n",
+                encoding="utf-8",
+            )
+            (root / ".gumball" / "repository-os.json").write_text(
+                '{"lifecycle":{},"projects":{},"labels":{},"release":{},"ci_cost":{}}\n',
+                encoding="utf-8",
+            )
+
+            problems = gumball._gumball_self_problems(root)
+
+            self.assertTrue(
+                any("VERSION (0.5.0)" in problem for problem in problems),
+                problems,
+            )
 
     def test_audit_detects_existing_mcp_config(self):
         with tempfile.TemporaryDirectory() as tmp:
