@@ -44,6 +44,8 @@ Use `docs/UPSTREAM_PROMOTION.md` for the promotion contract.
 
 `docs/README.md` is the documentation router and authority map.
 
+Use `docs/DIAGRAM_STYLE.md` for new or substantially revised architecture, CI, tooling, agent and data-flow diagrams. The shared style is part of the consumer baseline and must be propagated conservatively without overwriting a stronger project-owned visual convention.
+
 Changes to platform behavior, caller contracts, release policy, CI policy, adoption behavior or agent policy must update the relevant authoritative document in the same PR.
 
 Do not create a parallel document when an existing SSOT owns the subject.
@@ -70,3 +72,5 @@ For repository changes:
 - report checks as PASS, FAIL, BLOCKED or NOT RUN.
 
 Never claim a proof that was not actually executed.
+
+Gumball must also satisfy its own baseline. Changes to platform policy or tooling must keep `docs/DOGFOODING.md` true and `gumball doctor` green on the source repository.
