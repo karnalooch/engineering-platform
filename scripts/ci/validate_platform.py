@@ -20,6 +20,8 @@ REQUIRED_GUMBALL_PATHS = (
     "gumball.yaml",
     "docs/README.md",
     "docs/ARCHITECTURE.md",
+    "docs/DOGFOODING.md",
+    "docs/DIAGRAM_STYLE.md",
     "docs/ADOPTION.md",
     "docs/CI_MODEL.md",
     "docs/UPSTREAM_PROMOTION.md",
