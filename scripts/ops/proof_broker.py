@@ -624,19 +624,19 @@ def status_from_existing(
     run: dict[str, Any] | None,
 ) -> tuple[str, str | None]:
     if artifact is not None:
-        return "REUSE", "proof-status:reused"
+        return "REUSE", "reused"
     if run is None:
-        return "MISSING", "proof-status:requested"
+        return "MISSING", "requested"
 
     status = str(run.get("status") or "")
     conclusion = run.get("conclusion")
     if status in ACTIVE_STATUSES:
-        return "ALREADY_RUNNING", "proof-status:running"
+        return "ALREADY_RUNNING", "running"
     if status == "completed" and conclusion == "success":
-        return "REUSE_RUN", "proof-status:passed"
+        return "REUSE_RUN", "passed"
     if status == "completed" and conclusion in FAILED_CONCLUSIONS:
-        return "FAILED_EXISTING", "proof-status:failed"
-    return "UNKNOWN", "proof-status:requested"
+        return "FAILED_EXISTING", "failed"
+    return "UNKNOWN", "requested"
 
 
 def _run_url(run: dict[str, Any] | None) -> str | None:
@@ -694,7 +694,7 @@ def evaluate_proof(
         artifact = find_artifact(repo, token, artifact_key)
 
     run = find_existing_run(repo, token, proof, request_id)
-    existing_action, existing_label = status_from_existing(artifact, run)
+    existing_action, existing_status = status_from_existing(artifact, run)
 
     base_result = {
         "proof": proof_id,
@@ -705,7 +705,7 @@ def evaluate_proof(
     }
 
     if status_only:
-        set_status_label(repo, token, pr_number, existing_label, apply)
+        set_status_label(repo, token, pr_number, policy, proof_id, existing_status, apply)
         return {
             **base_result,
             "action": existing_action,
@@ -714,7 +714,7 @@ def evaluate_proof(
         }
 
     if artifact is not None:
-        set_status_label(repo, token, pr_number, "proof-status:reused", apply)
+        set_status_label(repo, token, pr_number, policy, proof_id, "reused", apply)
         return {
             **base_result,
             "action": "REUSE",
@@ -726,7 +726,7 @@ def evaluate_proof(
         status = str(run.get("status") or "")
         conclusion = run.get("conclusion")
         if status in ACTIVE_STATUSES:
-            set_status_label(repo, token, pr_number, "proof-status:running", apply)
+            set_status_label(repo, token, pr_number, policy, proof_id, "running", apply)
             return {
                 **base_result,
                 "action": "ALREADY_RUNNING",
@@ -734,7 +734,7 @@ def evaluate_proof(
                 "url": _run_url(run),
             }
         if status == "completed" and conclusion == "success":
-            set_status_label(repo, token, pr_number, "proof-status:passed", apply)
+            set_status_label(repo, token, pr_number, policy, proof_id, "passed", apply)
             return {
                 **base_result,
                 "action": "REUSE_RUN",
@@ -746,7 +746,7 @@ def evaluate_proof(
                 if apply:
                     rerun_workflow(repo, token, int(run["id"]))
                 set_status_label(
-                    repo, token, pr_number, "proof-status:running", apply
+                    repo, token, pr_number, policy, proof_id, "running", apply
                 )
                 return {
                     **base_result,
@@ -754,7 +754,7 @@ def evaluate_proof(
                     "message": f"rerunning existing {conclusion} proof",
                     "url": _run_url(run),
                 }
-            set_status_label(repo, token, pr_number, "proof-status:failed", apply)
+            set_status_label(repo, token, pr_number, policy, proof_id, "failed", apply)
             return {
                 **base_result,
                 "action": "FAILED_EXISTING",
@@ -786,7 +786,7 @@ def evaluate_proof(
             }
         if proof.get("cost_class") == "heavy" and not proof.get("merge_critical"):
             set_status_label(
-                repo, token, pr_number, "proof-status:deferred", apply
+                repo, token, pr_number, policy, proof_id, "deferred", apply
             )
             return {
                 **base_result,
@@ -833,7 +833,7 @@ def evaluate_proof(
     )
     if apply:
         dispatch_workflow(repo, token, proof, trusted_ref, inputs)
-    set_status_label(repo, token, pr_number, "proof-status:running", apply)
+    set_status_label(repo, token, pr_number, policy, proof_id, "running", apply)
     return {
         **base_result,
         "action": "DISPATCH",
