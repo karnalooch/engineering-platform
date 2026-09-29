@@ -34,7 +34,12 @@ Required baseline:
 - security and repository-governance baseline;
 - Gumball doctor / contract verification;
 - a path for recording reusable downstream improvements as Gumball promotion
-  candidates.
+  candidates;
+- repository lifecycle policy for branches, PRs, issues and GitHub Projects;
+- shared PR label taxonomy and trusted automatic classification;
+- application version/stage/artifact lineage for release-capable repositories;
+- CI Cost Governor planning that minimizes heavy builds, reuses build fingerprints
+  and defers non-merge-critical heavy proof.
 
 Keep heavyweight runtime, visual, emulator, hardware and environment-specific
 proof outside routine PR CI unless the repository already requires it or the
