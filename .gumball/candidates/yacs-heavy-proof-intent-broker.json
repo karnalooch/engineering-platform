@@ -1,0 +1,17 @@
+{
+  "id": "heavy-proof-intent-broker",
+  "source": "karnalooch/YetAnotherCyclingSim",
+  "category": "ci",
+  "problem": "A heavyweight YACS proof required a real workflow_dispatch event; rerunning the guarded job stayed skipped and still required a human Actions UI click.",
+  "invariant": "Authorized PR intent dispatches an allow-listed trusted workflow for the exact PR SHA with dedupe, reuse and CI-cost policy.",
+  "evidence": [
+    "Passo Giau R4.1B.3 Geometry Script capability probe",
+    "feat/238-r4-1b3-1-corridor-occlusion"
+  ],
+  "do_not_copy": [
+    "YACS domain names",
+    "Unreal-specific proof implementation"
+  ],
+  "failure_behavior": "Block ambiguous requests; defer non-critical automatic heavy proof; never duplicate exact proof work.",
+  "status": "platform"
+}
