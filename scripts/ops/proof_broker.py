@@ -588,6 +588,25 @@ def set_status_label(
         )
 
 
+def ensure_request_label(
+    repo: str,
+    token: str,
+    pr_number: int,
+    proof: dict[str, Any],
+    apply: bool,
+) -> None:
+    label = proof.get("label")
+    if not isinstance(label, str) or not label:
+        return
+    if apply:
+        github_ops.request(
+            token,
+            "POST",
+            f"/repos/{repo}/issues/{pr_number}/labels",
+            {"labels": [label]},
+        )
+
+
 def comment_result(
     repo: str,
     token: str,
@@ -674,6 +693,8 @@ def evaluate_proof(
         if not actor:
             raise BrokerError("explicit proof request is missing actor")
         authorize_actor(repo, token, actor, policy)
+        if not status_only:
+            ensure_request_label(repo, token, pr_number, proof, apply)
 
     pr = get_pr(repo, token, pr_number)
     if pr.get("state") != "open":
@@ -904,8 +925,8 @@ def reconcile(
                     policy=policy,
                     proof_id=proof_id,
                     pr_number=number,
-                    actor=actor,
-                    explicit=True,
+                    actor=None,
+                    explicit=False,
                     retry=False,
                     status_only=True,
                     apply=apply,
