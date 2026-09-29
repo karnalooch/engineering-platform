@@ -76,6 +76,7 @@ jobs:
       - name: Validate Gumball bootstrap and feedback contracts
         run: |
           python scripts/gumball.py doctor
+          python scripts/gumball.py promote
           python scripts/ci/check_docs_index.py
           python -m unittest scripts/ci/test_gumball.py -v
           python -m unittest scripts/ci/test_ci_primitives.py -v
