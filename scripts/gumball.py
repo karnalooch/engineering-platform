@@ -217,6 +217,27 @@ def _gumball_self_problems(root: Path) -> list[str]:
     if not (root / "tools" / "capabilities.yaml").is_file():
         problems.append("tools/capabilities.yaml is missing")
 
+    version = (root / "VERSION").read_text(encoding="utf-8").strip()
+    config_text = (root / "gumball.yaml").read_text(encoding="utf-8")
+    match = re.search(r"^platform_version:\\s*([^\\s#]+)", config_text, re.MULTILINE)
+    if not match:
+        problems.append("gumball.yaml platform_version is missing")
+    elif match.group(1) != version:
+        problems.append(
+            f"VERSION ({version}) != gumball.yaml platform_version ({match.group(1)})"
+        )
+
+    try:
+        repository_policy = json.loads(
+            (root / ".gumball" / "repository-os.json").read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        problems.append(f"repository OS policy is invalid: {exc}")
+    else:
+        for key in ("lifecycle", "projects", "labels", "release", "ci_cost"):
+            if key not in repository_policy:
+                problems.append(f"repository OS policy missing section: {key}")
+
     required_repository_os_paths = (
         "docs/REPOSITORY_LIFECYCLE.md",
         "docs/PROJECTS_FLOW.md",
