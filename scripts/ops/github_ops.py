@@ -195,7 +195,7 @@ def _replace_namespace_labels(
     if apply:
         request(
             token,
-            "POST",
+            "PUT",
             f"/repos/{repo}/issues/{number}/labels",
             {"labels": target},
         )
