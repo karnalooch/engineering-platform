@@ -8,6 +8,8 @@ All notable Gumball / engineering-platform contract changes are recorded here.
 - add `AGENTS.md` with platform invariants, documentation rules, conservative adoption and downstream-to-upstream promotion obligations;
 - add `docs/README.md` as an authoritative documentation router and promote the docs-index contract proven in YACS;
 - add Gumball architecture, adoption, CI-cost/proof, MCP/tooling and one-prompt bootstrap contracts;
+- add an explicit dogfooding contract: Gumball must satisfy its own baseline and self-prove it through `gumball doctor` and CI;
+- add a reusable Unreal-Blueprint-inspired Mermaid diagram language and propagate `docs/DIAGRAM_STYLE.md` through conservative `gumball apply` adoption;
 - add profile presets for standard, monorepo, mobile, Unreal and release-critical repositories;
 - add a tool/MCP capability manifest and conservative discovery of existing MCP configuration without copying private endpoints or secrets;
 - add a standard-library-only `gumball` helper with `audit`, `plan`, `apply`, `doctor` and `promote`;

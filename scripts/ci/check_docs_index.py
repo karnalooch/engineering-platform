@@ -24,6 +24,8 @@ REQUIRED_HEADINGS = {
 
 REQUIRED_LINKS = {
     "ARCHITECTURE.md",
+    "DOGFOODING.md",
+    "DIAGRAM_STYLE.md",
     "ADOPTION.md",
     "CI_MODEL.md",
     "UPSTREAM_PROMOTION.md",

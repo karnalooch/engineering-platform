@@ -24,6 +24,12 @@ governance:
 docs:
   index_required: true
   ssot_map_required: true
+  blueprint_diagram_style: required
+
+dogfooding:
+  self_apply: true
+  doctor_required: true
+  promotion_provenance_required: true
 
 agents:
   enabled: true

@@ -27,6 +27,7 @@ class GumballTests(unittest.TestCase):
             self.assertEqual((root / "AGENTS.md").read_text(encoding="utf-8"), original)
             self.assertTrue((root / "gumball.yaml").exists())
             self.assertTrue((root / "docs" / "README.md").exists())
+            self.assertTrue((root / "docs" / "DIAGRAM_STYLE.md").exists())
 
     def test_doctor_accepts_minimal_fail_closed_repository(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -36,6 +37,7 @@ class GumballTests(unittest.TestCase):
             (root / "gumball.yaml").write_text("schema_version: 1\n", encoding="utf-8")
             (root / "AGENTS.md").write_text("# rules\n", encoding="utf-8")
             (root / "docs" / "README.md").write_text("# docs\n", encoding="utf-8")
+            (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\n", encoding="utf-8")
             (root / ".github" / "workflows" / "ci.yml").write_text(
                 """name: CI
 permissions: {}
@@ -67,6 +69,7 @@ jobs:
             (root / "gumball.yaml").write_text("schema_version: 1\n", encoding="utf-8")
             (root / "AGENTS.md").write_text("# rules\n", encoding="utf-8")
             (root / "docs" / "README.md").write_text("# docs\n", encoding="utf-8")
+            (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\n", encoding="utf-8")
             (root / ".github" / "workflows" / "ci.yml").write_text(
                 """name: CI
 permissions: {}
@@ -92,6 +95,43 @@ jobs:
             safety = next(item for item in checks if item[0] == "workflow safety")
             self.assertEqual(safety[1], "FAIL")
             self.assertIn("not pinned", safety[2])
+
+    def test_gumball_source_requires_self_dogfooding_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "scripts").mkdir()
+            (root / ".github" / "workflows").mkdir(parents=True)
+            (root / "VERSION").write_text("0.4.0\\n", encoding="utf-8")
+            (root / "scripts" / "gumball.py").write_text("# source\\n", encoding="utf-8")
+            (root / ".github" / "workflows" / "reusable-governance.yml").write_text(
+                "name: reusable\\npermissions: {}\\n",
+                encoding="utf-8",
+            )
+            (root / "gumball.yaml").write_text("schema_version: 1\\n", encoding="utf-8")
+            (root / "AGENTS.md").write_text("# rules\\n", encoding="utf-8")
+            (root / "docs" / "README.md").write_text("# docs\\n", encoding="utf-8")
+            (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\\n", encoding="utf-8")
+            (root / ".github" / "workflows" / "ci.yml").write_text(
+                """name: CI
+permissions: {}
+jobs:
+  aggregate:
+    name: Aggregate CI gate
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok
+""",
+                encoding="utf-8",
+            )
+
+            ok, checks = gumball.doctor_repository(root)
+
+            self.assertFalse(ok)
+            dogfood = next(item for item in checks if item[0] == "Gumball dogfooding")
+            self.assertEqual(dogfood[1], "FAIL")
+            self.assertIn("DOGFOODING.md", dogfood[2])
 
     def test_audit_detects_existing_mcp_config(self):
         with tempfile.TemporaryDirectory() as tmp:

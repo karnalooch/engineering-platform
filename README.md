@@ -10,11 +10,24 @@ It is not a static project template. Gumball is a living control plane for CI, s
 
 ```mermaid
 flowchart LR
-    G["Gumball"] -->|"bootstrap / update"| P["Consumer repositories"]
-    P -->|"proven reusable improvements"| G
-    P --> Y["YACS"]
-    P --> V["4VELO"]
-    P --> O["ONICS / Karoo / future projects"]
+    G["🎮 GUMBALL<br/>Shared contracts"] -->|"ADOPT / UPDATE"| P["⬢ CONSUMER<br/>Repository"]
+    P --> Y["YACS<br/>Unreal / world / proof"]
+    P --> V["4VELO<br/>monorepo / mobile / release"]
+    P --> O["ONICS · KAROO<br/>future projects"]
+    Y -.->|"PROMOTE"| C["↩ CANDIDATE<br/>Reusable invariant"]
+    V -.->|"PROMOTE"| C
+    O -.->|"PROMOTE"| C
+    C -.->|"PROVEN"| G
+
+    classDef core fill:#172554,stroke:#60a5fa,color:#ffffff,stroke-width:4px;
+    classDef consumer fill:#34373d,stroke:#9da4ae,color:#ffffff,stroke-width:2px;
+    classDef tool fill:#4b2f69,stroke:#b77cff,color:#ffffff,stroke-width:3px;
+
+    class G core;
+    class P,Y,V,O consumer;
+    class C tool;
+
+    linkStyle default stroke-width:2px;
 ```
 
 Application code and product-specific runtime proof stay in product repositories. Gumball contains reusable engineering contracts and tools.
@@ -23,6 +36,8 @@ Application code and product-specific runtime proof stay in product repositories
 
 - [Documentation map](docs/README.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Dogfooding contract](docs/DOGFOODING.md)
+- [Blueprint diagram style](docs/DIAGRAM_STYLE.md)
 - [Adoption contract](docs/ADOPTION.md)
 - [CI model](docs/CI_MODEL.md)
 - [Downstream -> upstream promotion](docs/UPSTREAM_PROMOTION.md)
