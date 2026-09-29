@@ -7,5 +7,6 @@ capabilities:
   runtime_visual_proof: explicit_lane
   build_fingerprint: required
   artifact_fingerprint_reuse: required
+  proof_broker: required
 heavy_pr_proofs: disabled_by_default
 automatic_heavy_build_lanes_max: 1
