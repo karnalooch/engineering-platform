@@ -544,7 +544,7 @@ def set_status_label(
     if apply and sorted(current) != target:
         github_ops.request(
             token,
-            "POST",
+            "PUT",
             f"/repos/{repo}/issues/{pr_number}/labels",
             {"labels": target},
         )
