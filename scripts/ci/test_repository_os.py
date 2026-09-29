@@ -17,6 +17,8 @@ POLICY = {
         "stale_issue_after_days": 60,
         "stale_issue_auto_close": False,
         "protected_branch_patterns": ["main", "release/*"],
+        "keep_labels": ["lifecycle:keep"],
+        "blocked_labels": ["lifecycle:blocked"],
     },
     "projects": {"close_issue_on_done": True},
     "release": {
@@ -223,6 +225,42 @@ class LifecycleTests(unittest.TestCase):
             "pull_requests": [
                 {"number": 2, "state": "open", "head": "feat/live", "inactive_days": 0}
             ],
+            "issues": [],
+        }
+        actions = repository_os.lifecycle_plan(snapshot, POLICY)
+        self.assertFalse(any(action["action"] == "DELETE_BRANCH" for action in actions))
+
+    def test_blocked_stale_pr_is_not_closed(self):
+        snapshot = {
+            "branches": [],
+            "pull_requests": [
+                {
+                    "number": 9,
+                    "state": "open",
+                    "head": "feat/blocked",
+                    "inactive_days": 100,
+                    "labels": ["lifecycle:blocked"],
+                }
+            ],
+            "issues": [],
+        }
+        actions = repository_os.lifecycle_plan(snapshot, POLICY)
+        self.assertFalse(any(action["action"] == "CLOSE_STALE_PR" for action in actions))
+
+    def test_keep_label_preserves_merged_branch(self):
+        snapshot = {
+            "branches": [
+                {
+                    "name": "release/kept",
+                    "pull_request": {
+                        "state": "closed",
+                        "merged": True,
+                        "age_hours": 100,
+                        "labels": ["lifecycle:keep"],
+                    },
+                }
+            ],
+            "pull_requests": [],
             "issues": [],
         }
         actions = repository_os.lifecycle_plan(snapshot, POLICY)
