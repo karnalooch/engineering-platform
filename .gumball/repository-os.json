@@ -178,7 +178,14 @@
     "build_once_promote_many": true,
     "require_exact_source_sha": true,
     "require_artifact_sha256": true,
-    "reject_version_source_conflicts": true
+    "reject_version_source_conflicts": true,
+    "require_semver": true,
+    "artifact_required_stages": [
+      "preview",
+      "beta",
+      "rc",
+      "stable"
+    ]
   },
   "ci_cost": {
     "target_runner_minutes": {
