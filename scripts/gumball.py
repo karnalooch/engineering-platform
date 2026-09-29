@@ -161,6 +161,7 @@ def audit_repository(root: Path) -> dict[str, Any]:
             "docs_index": (root / "docs" / "README.md").exists(),
             "diagram_style": (root / "docs" / "DIAGRAM_STYLE.md").exists(),
             "repository_os_policy": (root / ".gumball" / "repository-os.json").exists(),
+            "proof_broker_policy": (root / ".gumball" / "proof-broker.json").exists(),
             "dogfooding": (root / "docs" / "DOGFOODING.md").exists(),
             "gumball_source": _is_gumball_source(root),
             "aggregate_gate": _has_fail_closed_aggregate(root),
@@ -180,6 +181,7 @@ def plan_repository(audit: dict[str, Any]) -> list[dict[str, str]]:
         ("docs_index", "docs/README.md"),
         ("diagram_style", "docs/DIAGRAM_STYLE.md"),
         ("repository_os_policy", ".gumball/repository-os.json"),
+        ("proof_broker_policy", ".gumball/proof-broker.json"),
     ):
         if contracts[key]:
             actions.append({"action": "KEEP", "path": path, "reason": "already present; inspect before modifying"})
@@ -247,6 +249,10 @@ def _gumball_self_problems(root: Path) -> list[str]:
         "scripts/ops/repository_os.py",
         "scripts/ops/github_ops.py",
         ".github/workflows/repository-ops.yml",
+        "docs/PROOF_BROKER.md",
+        ".gumball/proof-broker.json",
+        "scripts/ops/proof_broker.py",
+        ".github/workflows/proof-broker.yml",
     )
     for relative in required_repository_os_paths:
         if not (root / relative).is_file():
@@ -278,6 +284,7 @@ def _gumball_self_problems(root: Path) -> list[str]:
         "python -m unittest scripts/ci/test_gumball.py -v",
         "python -m unittest scripts/ci/test_repository_os.py -v",
         "python -m unittest scripts/ci/test_github_ops.py -v",
+        "python -m unittest scripts/ci/test_proof_broker.py -v",
     )
     for marker in required_ci_markers:
         if marker not in ci_text:
@@ -299,6 +306,7 @@ def doctor_repository(root: Path) -> tuple[bool, list[tuple[str, str, str]]]:
     add("docs index", contracts["docs_index"], "docs/README.md")
     add("diagram style", contracts["diagram_style"], "docs/DIAGRAM_STYLE.md")
     add("repository OS policy", contracts["repository_os_policy"], ".gumball/repository-os.json")
+    add("proof broker policy", contracts["proof_broker_policy"], ".gumball/proof-broker.json")
     add("workflow discovery", contracts["workflow_count"] > 0, f"{contracts['workflow_count']} workflow(s)")
     add("aggregate gate", contracts["aggregate_gate"], "caller-local fail-closed Aggregate CI gate")
 
@@ -343,6 +351,10 @@ repository_os:
   labels: required
   release_lineage: required_for_release_profiles
   ci_cost_governor: required
+proof_broker:
+  policy: .gumball/proof-broker.json
+  trusted_dispatch: supported
+  manual_fallback: required
 agents:
   preserve_local_instructions: true
   evaluate_upstream_promotion: true
@@ -441,9 +453,12 @@ def apply_baseline(root: Path, profile: str, write: bool) -> list[tuple[str, str
         (root / "docs" / "README.md", _generated_docs_index()),
         (root / "docs" / "DIAGRAM_STYLE.md", _generated_diagram_style()),
         (root / ".gumball" / "repository-os.json", _generated_repository_os()),
+        (root / ".gumball" / "proof-broker.json", _source_file(".gumball/proof-broker.json")),
         (root / "scripts" / "ops" / "repository_os.py", _source_file("scripts/ops/repository_os.py")),
         (root / "scripts" / "ops" / "github_ops.py", _source_file("scripts/ops/github_ops.py")),
         (root / ".github" / "workflows" / "repository-ops.yml", _source_file(".github/workflows/repository-ops.yml")),
+        (root / ".github" / "workflows" / "proof-broker.yml", _source_file(".github/workflows/proof-broker.yml")),
+        (root / "scripts" / "ops" / "proof_broker.py", _source_file("scripts/ops/proof_broker.py")),
         (root / "templates" / "release-manifest.json", _source_file("templates/release-manifest.json")),
         (root / ".gumball" / "candidates" / "README.md",
          "# Gumball promotion candidates\n\nRecord reusable downstream engineering improvements here.\n"),
