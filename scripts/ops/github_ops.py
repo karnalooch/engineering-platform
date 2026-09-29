@@ -271,6 +271,7 @@ def gather_snapshot(repo: str, token: str) -> dict[str, Any]:
                 "merged": bool(merged_at),
                 "age_hours": _age_days(event_time, now) * 24,
                 "age_days": _age_days(event_time, now),
+                "labels": [label["name"] for label in latest.get("labels", [])],
             }
         else:
             commit = request(token, "GET", f"/repos/{repo}/commits/{branch['commit']['sha']}")
