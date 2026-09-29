@@ -372,6 +372,7 @@ def _generated_agents() -> str:
 - Keep the final Aggregate CI gate caller-local and fail closed.
 - Use immutable external Action/workflow references.
 - Treat heavy runtime, visual, emulator and hardware proof as explicit project/profile policy.
+- When Proof Broker is configured, request heavyweight proof through its exact-SHA label/comment contract; keep manual workflow_dispatch as fallback only.
 - Evaluate reusable CI, governance, security, docs, tooling, MCP and agent-workflow improvements for promotion back to Gumball.
 - Report validation as PASS, FAIL, BLOCKED or NOT RUN.
 """
