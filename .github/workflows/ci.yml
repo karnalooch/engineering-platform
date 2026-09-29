@@ -92,6 +92,8 @@ jobs:
           python -m unittest scripts/ci/test_gumball.py -v
           python -m unittest scripts/ci/test_repository_os.py -v
           python -m unittest scripts/ci/test_github_ops.py -v
+          python scripts/ops/repository_os.py --help
+          python scripts/ops/github_ops.py --help
           python -m unittest scripts/ci/test_ci_primitives.py -v
 
       - name: Test fail-closed governance and auto-merge policy
