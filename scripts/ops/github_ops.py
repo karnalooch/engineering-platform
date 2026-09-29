@@ -369,6 +369,43 @@ query($id: ID!) {
 }
 """
 
+
+PROJECT_ITEMS_QUERY = """
+query($project: ID!, $after: String) {
+  node(id: $project) {
+    ... on ProjectV2 {
+      items(first: 100, after: $after) {
+        nodes {
+          id
+          fieldValueByName(name: "Status") {
+            ... on ProjectV2ItemFieldSingleSelectValue { name }
+          }
+          content {
+            ... on Issue {
+              id
+              number
+              state
+              repository { nameWithOwner }
+              labels(first: 50) { nodes { name } }
+            }
+            ... on PullRequest {
+              id
+              number
+              state
+              merged
+              isDraft
+              repository { nameWithOwner }
+              labels(first: 50) { nodes { name } }
+            }
+          }
+        }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }
+}
+"""
+
 ADD_ITEM = """
 mutation($project: ID!, $content: ID!) {
   addProjectV2ItemById(input: {projectId: $project, contentId: $content}) {
@@ -576,6 +613,142 @@ def project_event(
     return result or ["projects: no supported event content"]
 
 
+
+def _semantic_from_project_status(
+    policy: dict[str, Any],
+    status_name: str | None,
+) -> str | None:
+    if not status_name:
+        return None
+    for semantic, names in policy["projects"]["semantic_statuses"].items():
+        if status_name in names:
+            return semantic
+    return None
+
+
+def project_audit(
+    repo: str,
+    token: str,
+    project_token: str | None,
+    policy: dict[str, Any],
+    apply: bool,
+) -> list[str]:
+    projects = policy["projects"]
+    if not projects.get("enabled"):
+        return ["projects: DISABLED"]
+    if not project_token:
+        raise GitHubError("Projects integration enabled but GUMBALL_PROJECT_TOKEN is missing")
+
+    owner = projects.get("owner")
+    number = projects.get("number")
+    if not owner or not number:
+        raise GitHubError("Projects integration enabled but owner/number is missing")
+
+    project_id, field_id, options = _project_metadata(
+        project_token,
+        owner,
+        int(number),
+        projects.get("status_field", "Status"),
+    )
+
+    rows: list[dict[str, Any]] = []
+    cursor = None
+    while True:
+        data = graphql(
+            project_token,
+            PROJECT_ITEMS_QUERY,
+            {"project": project_id, "after": cursor},
+        )
+        node = data.get("node") or {}
+        items = node.get("items") or {}
+        rows.extend(items.get("nodes") or [])
+        page = items.get("pageInfo") or {}
+        if not page.get("hasNextPage"):
+            break
+        cursor = page.get("endCursor")
+
+    messages: list[str] = []
+    for row in rows:
+        content = row.get("content")
+        if not isinstance(content, dict):
+            continue
+        repository = (content.get("repository") or {}).get("nameWithOwner")
+        if repository != repo:
+            continue
+
+        typename = "pull_request" if "merged" in content else "issue"
+        state = content.get("state", "").lower()
+        if typename == "pull_request" and content.get("merged"):
+            state = "merged"
+
+        model = {
+            "kind": typename,
+            "state": state,
+            "draft": content.get("isDraft", False),
+            "labels": [
+                label["name"]
+                for label in (content.get("labels") or {}).get("nodes", [])
+            ],
+        }
+
+        current_name = (row.get("fieldValueByName") or {}).get("name")
+        current_semantic = _semantic_from_project_status(policy, current_name)
+
+        if (
+            typename == "issue"
+            and state == "open"
+            and current_semantic == "done"
+            and projects.get("close_issue_on_done")
+        ):
+            messages.append(f"projects: CLOSE issue #{content['number']} from Done")
+            if apply:
+                request(
+                    token,
+                    "PATCH",
+                    f"/repos/{repo}/issues/{content['number']}",
+                    {"state": "closed"},
+                )
+            continue
+
+        if typename == "issue" and state == "open" and current_semantic in {
+            "in_progress",
+            "in_review",
+        }:
+            messages.append(
+                f"projects: KEEP issue #{content['number']} in {current_name}"
+            )
+            continue
+
+        desired = repository_os.desired_project_state(model)
+        if desired == "unknown" or desired == current_semantic:
+            continue
+
+        option = _semantic_option(policy, desired, options)
+        if option is None:
+            messages.append(
+                f"projects: BLOCKED #{content['number']} missing option for {desired}"
+            )
+            continue
+
+        option_name, option_id = option
+        messages.append(
+            f"projects: MOVE #{content['number']} {current_name!r} -> {option_name}"
+        )
+        if apply:
+            graphql(
+                project_token,
+                UPDATE_STATUS,
+                {
+                    "project": project_id,
+                    "item": row["id"],
+                    "field": field_id,
+                    "option": option_id,
+                },
+            )
+
+    return messages or ["projects: MATCH"]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="gumball-github-ops")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
@@ -597,6 +770,12 @@ def main() -> int:
         default=os.environ.get("GITHUB_EVENT_PATH"),
     )
     project.add_argument(
+        "--project-token",
+        default=os.environ.get("GUMBALL_PROJECT_TOKEN"),
+    )
+
+    project_audit_parser = sub.add_parser("project-audit")
+    project_audit_parser.add_argument(
         "--project-token",
         default=os.environ.get("GUMBALL_PROJECT_TOKEN"),
     )
@@ -635,6 +814,14 @@ def main() -> int:
                 args.project_token,
                 policy,
                 Path(args.event),
+                args.apply,
+            )
+        elif args.command == "project-audit":
+            messages = project_audit(
+                args.repo,
+                args.token,
+                args.project_token,
+                policy,
                 args.apply,
             )
         else:
