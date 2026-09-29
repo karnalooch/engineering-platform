@@ -7,5 +7,6 @@ capabilities:
   release_manifest: required
   build_once_promote_many: required
   artifact_fingerprint_reuse: required
+  proof_broker: recommended
 heavy_pr_proofs: targeted
 automatic_heavy_build_lanes_max: 1

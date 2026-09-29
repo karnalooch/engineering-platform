@@ -10,5 +10,6 @@ capabilities:
   repository_lifecycle: required
   pr_labels: required
   ci_cost_governor: required
+  proof_broker: supported
   projects_flow: optional
 heavy_pr_proofs: disabled

@@ -45,3 +45,19 @@ Labels are inputs to Projects reconciliation:
 - `lifecycle:keep` prevents stale auto-close/cleanup;
 - `ci:heavy` signals that automatic PR CI should remain selective.
 
+
+## Proof Broker labels
+
+Proof-request and proof-status labels are owned by the [Proof Broker](PROOF_BROKER.md), not the general Repository OS label reconciler.
+
+Namespaces:
+
+- `proof:<proof-id>` — explicit proof request configured by the consumer;
+- `proof-status:<proof-id>:requested`;
+- `proof-status:<proof-id>:running`;
+- `proof-status:<proof-id>:passed`;
+- `proof-status:<proof-id>:failed`;
+- `proof-status:<proof-id>:deferred`;
+- `proof-status:<proof-id>:reused`.
+
+Keeping ownership separate prevents the generic label sync from fighting broker-specific colors/descriptions or accidentally deleting dynamic proof-request labels.

@@ -29,9 +29,13 @@ class GumballTests(unittest.TestCase):
             self.assertTrue((root / "docs" / "README.md").exists())
             self.assertTrue((root / "docs" / "DIAGRAM_STYLE.md").exists())
             self.assertTrue((root / ".gumball" / "repository-os.json").exists())
+            self.assertTrue((root / ".gumball" / "proof-broker.json").exists())
             self.assertTrue((root / "scripts" / "ops" / "repository_os.py").exists())
             self.assertTrue((root / "scripts" / "ops" / "github_ops.py").exists())
             self.assertTrue((root / ".github" / "workflows" / "repository-ops.yml").exists())
+            self.assertTrue((root / ".github" / "workflows" / "proof-broker.yml").exists())
+            self.assertTrue((root / "scripts" / "ops" / "proof_broker.py").exists())
+            self.assertTrue((root / "docs" / "PROOF_BROKER.md").exists())
             self.assertTrue((root / "templates" / "release-manifest.json").exists())
 
     def test_doctor_accepts_minimal_fail_closed_repository(self):
@@ -45,6 +49,7 @@ class GumballTests(unittest.TestCase):
             (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\n", encoding="utf-8")
             (root / ".gumball").mkdir(exist_ok=True)
             (root / ".gumball" / "repository-os.json").write_text("{}\n", encoding="utf-8")
+            (root / ".gumball" / "proof-broker.json").write_text("{}\n", encoding="utf-8")
             (root / ".github" / "workflows" / "ci.yml").write_text(
                 """name: CI
 permissions: {}
@@ -79,6 +84,7 @@ jobs:
             (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\n", encoding="utf-8")
             (root / ".gumball").mkdir(exist_ok=True)
             (root / ".gumball" / "repository-os.json").write_text("{}\n", encoding="utf-8")
+            (root / ".gumball" / "proof-broker.json").write_text("{}\n", encoding="utf-8")
             (root / ".github" / "workflows" / "ci.yml").write_text(
                 """name: CI
 permissions: {}

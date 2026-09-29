@@ -39,7 +39,9 @@ Required baseline:
 - shared PR label taxonomy and trusted automatic classification;
 - application version/stage/artifact lineage for release-capable repositories;
 - CI Cost Governor planning that minimizes heavy builds, reuses build fingerprints
-  and defers non-merge-critical heavy proof.
+  and defers non-merge-critical heavy proof;
+- Proof Broker configuration for manual workflow_dispatch lanes that should be
+  requestable from PR labels/comments with exact-SHA dedupe/reuse.
 
 Keep heavyweight runtime, visual, emulator, hardware and environment-specific
 proof outside routine PR CI unless the repository already requires it or the

@@ -1,6 +1,6 @@
 schema_version: 1
 name: Gumball
-platform_version: 0.5.0
+platform_version: 0.6.0
 
 adoption:
   mode: preserve-local
@@ -55,3 +55,9 @@ repository_os:
   labels: required
   release_lineage: required_for_release_profiles
   ci_cost_governor: required
+
+proof_broker:
+  policy: .gumball/proof-broker.json
+  trusted_dispatch: supported
+  manual_fallback: required
+  duplicate_heavy_work: forbidden

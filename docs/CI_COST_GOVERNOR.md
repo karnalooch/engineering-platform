@@ -143,3 +143,18 @@ python scripts/ops/repository_os.py ci-decision \
 ```
 
 The artifact registry is a reuse mechanism, not a trust shortcut: the artifact still needs the exact build fingerprint and release/proof manifest expected by the consumer.
+
+## Proof Broker integration
+
+The CI Cost Governor decides **whether** heavyweight evidence should run; the [Proof Broker](PROOF_BROKER.md) decides **how** an approved proof request is safely dispatched.
+
+For heavyweight proofs:
+
+- automatic + merge-critical -> broker may dispatch once for the exact revision;
+- automatic + non-merge-critical -> `DEFER`;
+- explicit authorized PR request -> broker may dispatch even when non-merge-critical;
+- existing exact artifact/successful run -> `REUSE`;
+- identical queued/running request -> `ALREADY_RUNNING`;
+- failed existing request -> no automatic loop; explicit retry required.
+
+This prevents cost optimization from turning into silent loss of evidence, while removing routine Actions-UI clicking.

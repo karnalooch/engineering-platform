@@ -34,7 +34,8 @@ Discover the actual repository before proposing changes:
 - open branch/PR/issue lifecycle and GitHub Projects usage;
 - application version sources, delivery stages and artifact provenance;
 - existing PR label taxonomy;
-- heavyweight CI/build lanes and their current cost/reuse behavior.
+- heavyweight CI/build lanes and their current cost/reuse behavior;
+- manual workflow_dispatch proof lanes that can be migrated to the trusted Proof Broker.
 
 Do not infer a missing rule from the absence of a familiar filename.
 
@@ -73,7 +74,8 @@ A migration is incomplete until:
 - `.gumball/repository-os.json` documents lifecycle, labels, release lineage and CI cost policy;
 - trusted repository-ops automation is present when the project opts into automatic reconciliation;
 - release-capable profiles can generate and validate artifact manifests;
-- heavy build lanes have an explicit reuse/defer strategy.
+- heavy build lanes have an explicit reuse/defer strategy;
+- broker-managed proof workflows accept exact SHA/request-id inputs and use a trusted default-branch workflow definition.
 
 ## Profiles
 

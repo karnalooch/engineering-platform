@@ -61,7 +61,7 @@ Every releasable artifact should have a machine-readable manifest containing at 
   "source": {"sha": "<40-char sha>"},
   "build": {"id": "provider-build-id", "profile": "release"},
   "artifact": {"name": "example", "sha256": "<digest>"},
-  "provenance": {"gumball_version": "0.5.0"}
+  "provenance": {"gumball_version": "0.6.0"}
 }
 ```
 
@@ -109,7 +109,7 @@ python scripts/ops/repository_os.py release-create \
   --profile release \
   --toolchain <toolchain-id> \
   --artifact path/to/artifact \
-  --gumball-version 0.5.0 \
+  --gumball-version 0.6.0 \
   --output release-manifest.json
 ```
 

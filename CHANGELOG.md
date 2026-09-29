@@ -2,6 +2,26 @@
 
 All notable Gumball / engineering-platform contract changes are recorded here.
 
+## 0.6.0 — Proof Broker
+
+- add `.gumball/proof-broker.json` allow-list and broker policy;
+- add trusted `.github/workflows/proof-broker.yml` orchestration from the default branch;
+- allow authorized PR proof intent through `proof:<id>` labels and `/gumball proof <id>` comments;
+- bind every broker request to the exact PR branch, 40-character source SHA and deterministic request id;
+- require broker-managed target workflows to expose workflow_dispatch inputs and include the request id in `run-name`;
+- block branch-local workflow definitions by default while the broker holds `actions: write`;
+- reuse exact non-expired artifacts and successful proof runs instead of duplicating heavyweight work;
+- refuse duplicate queued/running proofs and require explicit retry for failed runs;
+- integrate automatic heavyweight proof dispatch with the CI Cost Governor: non-merge-critical automatic proof is deferred;
+- keep manual workflow_dispatch on target workflows as an emergency fallback;
+- add broker-owned proof request/status labels and hourly status reconciliation;
+- propagate broker policy, workflow, runtime script and documentation through conservative `gumball apply`;
+- require the broker in the Unreal profile, recommend it for mobile native proof and use it for heavyweight release-critical proof;
+- fix Repository OS namespace label replacement to use atomic set-label semantics instead of additive label mutation;
+- self-test broker authorization boundaries, exact-SHA inputs, trusted workflow definition, dedupe/reuse/defer/retry behavior and permission scoping.
+
+Canonical consumer SHA: assigned from the v0.6.0 merge commit after merge.
+
 ## 0.5.0 — Repository OS
 
 - add machine-readable `.gumball/repository-os.json` policy;

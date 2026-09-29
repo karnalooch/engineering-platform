@@ -9,5 +9,6 @@ capabilities:
   build_once_promote_many: required
   release_evidence: required
   deployment_proof: consumer_owned
+  proof_broker: required_for_heavy_proof
 pr_merge_gate: aggregate
 release_gate: explicit

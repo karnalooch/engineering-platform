@@ -45,12 +45,14 @@ When `gumball doctor` detects the Gumball source repository, it additionally req
 - the Gumball tool capability manifest;
 - the shared Blueprint diagram style contract that is also propagated to consumers;
 - the repository OS policy, lifecycle/release/labels/CI-cost contracts and trusted reconciler workflow;
+- the Proof Broker policy, trusted dispatch workflow and exact-SHA/dedupe contract;
 - at least one platform promotion provenance record;
 - Gumball CI to invoke `gumball doctor`;
 - Gumball CI to invoke `gumball promote`;
 - Gumball CI to validate the documentation router;
 - Gumball CI to run Gumball contract tests;
 - Gumball CI to run repository OS and GitHub-ops contract tests;
+- Gumball CI to run Proof Broker contract tests and policy validation;
 - a caller-local fail-closed `Aggregate CI gate`.
 
 These are additional checks. They do not replace the ordinary workflow-safety checks.

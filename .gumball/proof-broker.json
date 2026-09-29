@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "allowed_permissions": [
+      "write",
+      "maintain",
+      "admin"
+    ],
+    "dispatch_ref": "default",
+    "allow_branch_workflow_definition": false,
+    "require_exact_sha_input": true,
+    "require_request_id_run_name": true,
+    "manual_workflow_dispatch_fallback": true,
+    "reconcile_interval_minutes": 60,
+    "status_label_template": "proof-status:$proof:$status",
+    "trusted_actor_logins": []
+  },
+  "proofs": {
+    "example-heavy-proof": {
+      "enabled": false,
+      "workflow": "example-heavy-proof.yml",
+      "label": "proof:example-heavy-proof",
+      "cost_class": "heavy",
+      "merge_critical": false,
+      "dispatch_ref": "default",
+      "request_id_input": "gumball_request_id",
+      "inputs": {
+        "source_ref": "$branch",
+        "exact_sha": "$sha",
+        "pull_request": "$pr_number",
+        "gumball_request_id": "$request_id"
+      },
+      "artifact_name": "proof-$proof-$sha",
+      "automatic": {
+        "enabled": false,
+        "require_ci_class": "heavy"
+      },
+      "allowed_write_permissions": []
+    }
+  }
+}
