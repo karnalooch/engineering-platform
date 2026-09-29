@@ -24,6 +24,8 @@ def enabled_policy(*, automatic: bool = False, merge_critical: bool = False):
             "require_request_id_run_name": True,
             "manual_workflow_dispatch_fallback": True,
             "status_label_template": "proof-status:$proof:$status",
+            "trusted_actor_logins": [],
+            "forbid_target_write_permissions": True,
         },
         "proofs": {
             "geometry": {
@@ -41,6 +43,7 @@ def enabled_policy(*, automatic: bool = False, merge_critical: bool = False):
                     "gumball_request_id": "$request_id",
                 },
                 "artifact_name": "proof-$proof-$sha",
+                "allowed_write_permissions": [],
                 "automatic": {
                     "enabled": automatic,
                     "require_ci_class": "heavy",
@@ -74,7 +77,7 @@ jobs:
   proof:
     runs-on: ubuntu-latest
     steps:
-      - run: echo proof
+      - run: echo "${{ inputs.exact_sha }}"
 """
 
 
@@ -135,6 +138,21 @@ class RequestTests(unittest.TestCase):
         self.assertEqual(result["gumball_request_id"], "request-1")
 
 
+class AuthorizationTests(unittest.TestCase):
+    def test_explicit_trusted_actor_bypasses_collaborator_lookup(self):
+        policy = enabled_policy()
+        policy["defaults"]["trusted_actor_logins"] = ["trusted-bot[bot]"]
+        with mock.patch.object(proof_broker, "actor_permission") as permission:
+            result = proof_broker.authorize_actor(
+                "owner/repo",
+                "token",
+                "trusted-bot[bot]",
+                policy,
+            )
+        self.assertEqual(result, "trusted-actor")
+        permission.assert_not_called()
+
+
 class WorkflowContractTests(unittest.TestCase):
     def test_valid_target_contract_passes(self):
         policy = enabled_policy()
@@ -156,6 +174,32 @@ class WorkflowContractTests(unittest.TestCase):
         )
         problems = proof_broker.validate_workflow_contract(workflow, proof)
         self.assertTrue(any("run-name" in item for item in problems), problems)
+
+    def test_exact_sha_must_be_referenced(self):
+        policy = enabled_policy()
+        proof = policy["proofs"]["geometry"]
+        workflow = valid_target_workflow().replace(
+            '      - run: echo "${{ inputs.exact_sha }}"',
+            "      - run: echo proof",
+        )
+        problems = proof_broker.validate_workflow_contract(workflow, proof)
+        self.assertTrue(
+            any("declared but never referenced" in item for item in problems),
+            problems,
+        )
+
+    def test_target_write_permission_requires_explicit_allowlist(self):
+        policy = enabled_policy()
+        proof = policy["proofs"]["geometry"]
+        workflow = valid_target_workflow().replace(
+            "permissions:\n  contents: read",
+            "permissions:\n  contents: write",
+        )
+        problems = proof_broker.validate_workflow_contract(workflow, proof)
+        self.assertTrue(
+            any("write permission 'contents'" in item for item in problems),
+            problems,
+        )
 
     def test_exact_sha_input_is_required(self):
         policy = enabled_policy()
