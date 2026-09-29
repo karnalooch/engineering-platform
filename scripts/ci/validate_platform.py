@@ -27,7 +27,11 @@ REQUIRED_GUMBALL_PATHS = (
     "docs/MCP_AND_TOOLS.md",
     "profiles/standard.yaml",
     "scripts/gumball.py",
+    "scripts/ci/check_docs_index.py",
+    "scripts/ci/evaluate_aggregate.py",
+    "scripts/ci/assert_nonempty.py",
     "scripts/ci/test_gumball.py",
+    "scripts/ci/test_ci_primitives.py",
 )
 
 
