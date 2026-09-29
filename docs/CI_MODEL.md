@@ -68,3 +68,12 @@ Consumers should add assertions for:
 
 This is a reusable invariant and should be preferred over technology-specific assumptions.
 
+
+## Reference primitives
+
+Gumball ships standard-library-only reference implementations:
+
+- `scripts/ci/evaluate_aggregate.py` — validates a dynamic expected job set and fails closed on missing/unknown/unexpectedly skipped required evidence;
+- `scripts/ci/assert_nonempty.py` — rejects selectors that unexpectedly resolve to zero work.
+
+They were generalized from failure modes proven in downstream CI. Consumers may adapt them, but must preserve the documented invariants.
