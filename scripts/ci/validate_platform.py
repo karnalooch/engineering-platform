@@ -26,6 +26,7 @@ REQUIRED_GUMBALL_PATHS = (
     "docs/ONE_PROMPT_BOOTSTRAP.md",
     "docs/MCP_AND_TOOLS.md",
     "profiles/standard.yaml",
+    "tools/capabilities.yaml",
     "scripts/gumball.py",
     "scripts/ci/check_docs_index.py",
     "scripts/ci/evaluate_aggregate.py",
