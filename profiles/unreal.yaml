@@ -1,0 +1,9 @@
+profile: unreal
+extends: standard
+capabilities:
+  git_lfs_policy: required
+  generated_directory_guard: required
+  toolchain_build_proof: consumer_owned
+  runtime_visual_proof: explicit_lane
+heavy_pr_proofs: disabled_by_default
+

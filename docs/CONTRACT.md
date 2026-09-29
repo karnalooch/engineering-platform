@@ -1,4 +1,6 @@
-# Consumer contract
+# Gumball consumer contract
+
+Gumball is currently distributed from the compatibility repository coordinate `karnalooch/engineering-platform`. A future repository rename requires a separate migration of all consumer pins.
 
 ## Immutable consumption
 

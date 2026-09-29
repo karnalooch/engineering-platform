@@ -1,0 +1,8 @@
+profile: mobile
+extends: standard
+capabilities:
+  native_runtime_boundary: recommended
+  native_smoke: profile_owned
+  release_artifact_proof: release_lane
+heavy_pr_proofs: targeted
+

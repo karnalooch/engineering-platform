@@ -1,0 +1,20 @@
+{
+  "id": "ci-dynamic-aggregate-anti-noop",
+  "source": "karnalooch/stunning-pancake",
+  "category": "ci",
+  "problem": "Path-aware CI can become falsely green when expected jobs are skipped, a filtered workspace/test selector matches zero work, or heavy release proof is charged to every routine pull request.",
+  "invariant": "Change-aware CI must calculate an explicit expected proof set, fail closed when required evidence is missing or unexpectedly skipped, reject zero-work selectors, and keep heavyweight full/release proof separate from the normal PR merge gate.",
+  "evidence": [
+    "scripts/check_ci_aggregate.py",
+    "scripts/plan_affected_tests.py",
+    "docs/ci/CHANGE_CLASSIFIER_V1.md",
+    "docs/ci/FULL_RELEASE_LANE_V1.md"
+  ],
+  "do_not_copy": [
+    "4VELO package/workspace names",
+    "Android/Home Lab/Kubernetes job names",
+    "product-specific path classifier rules"
+  ],
+  "failure_behavior": "Fail on missing/unknown/cancelled/unexpectedly skipped required jobs and on an empty expected job set or an expected selector resolving to zero work.",
+  "status": "platform"
+}

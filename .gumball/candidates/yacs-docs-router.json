@@ -1,0 +1,19 @@
+{
+  "id": "docs-authority-router",
+  "source": "karnalooch/YetAnotherCyclingSim",
+  "category": "documentation",
+  "problem": "Large documentation sets become ambiguous when agents cannot reliably distinguish current SSOT from experiments, proof history and superseded plans.",
+  "invariant": "Every repository should expose a documentation entry point that routes work to explicit authoritative sources and prevents top-level documentation from becoming invisible.",
+  "evidence": [
+    "docs/README.md",
+    "scripts/ci/check_docs_index.py",
+    "AGENTS.md documentation SSOT and freshness rules"
+  ],
+  "do_not_copy": [
+    "YACS-specific stage names",
+    "Passo Giau terrain/route authority",
+    "Unreal-specific documentation catalog"
+  ],
+  "failure_behavior": "Fail when the docs index is missing required authority links, contains broken local links, or omits top-level documentation that the repository contract requires to be indexed.",
+  "status": "platform"
+}

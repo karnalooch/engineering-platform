@@ -1,0 +1,8 @@
+profile: monorepo
+extends: standard
+capabilities:
+  change_classifier: required
+  workspace_match_assertion: required
+  affected_test_plan: recommended
+unknown_change_behavior: broad
+

@@ -9,10 +9,30 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = ROOT / ".github" / "workflows"
 IMMUTABLE_SHA = re.compile(r"^[0-9a-f]{40}$")
-USES = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
+USES = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)", re.MULTILINE)
 FAIL_OPEN = re.compile(
     r"^\s*continue-on-error:\s*true\s*(?:#.*)?$",
     re.IGNORECASE | re.MULTILINE,
+)
+
+REQUIRED_GUMBALL_PATHS = (
+    "AGENTS.md",
+    "gumball.yaml",
+    "docs/README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/ADOPTION.md",
+    "docs/CI_MODEL.md",
+    "docs/UPSTREAM_PROMOTION.md",
+    "docs/ONE_PROMPT_BOOTSTRAP.md",
+    "docs/MCP_AND_TOOLS.md",
+    "profiles/standard.yaml",
+    "tools/capabilities.yaml",
+    "scripts/gumball.py",
+    "scripts/ci/check_docs_index.py",
+    "scripts/ci/evaluate_aggregate.py",
+    "scripts/ci/assert_nonempty.py",
+    "scripts/ci/test_gumball.py",
+    "scripts/ci/test_ci_primitives.py",
 )
 
 
@@ -22,6 +42,10 @@ def main() -> int:
 
     if not workflows:
         problems.append("no workflow files discovered")
+
+    for relative in REQUIRED_GUMBALL_PATHS:
+        if not (ROOT / relative).is_file():
+            problems.append(f"missing required Gumball contract: {relative}")
 
     for path in workflows:
         text = path.read_text(encoding="utf-8")
