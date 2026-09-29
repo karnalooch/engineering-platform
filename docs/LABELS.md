@@ -53,11 +53,11 @@ Proof-request and proof-status labels are owned by the [Proof Broker](PROOF_BROK
 Namespaces:
 
 - `proof:<proof-id>` — explicit proof request configured by the consumer;
-- `proof-status:requested`;
-- `proof-status:running`;
-- `proof-status:passed`;
-- `proof-status:failed`;
-- `proof-status:deferred`;
-- `proof-status:reused`.
+- `proof-status:<proof-id>:requested`;
+- `proof-status:<proof-id>:running`;
+- `proof-status:<proof-id>:passed`;
+- `proof-status:<proof-id>:failed`;
+- `proof-status:<proof-id>:deferred`;
+- `proof-status:<proof-id>:reused`.
 
 Keeping ownership separate prevents the generic label sync from fighting broker-specific colors/descriptions or accidentally deleting dynamic proof-request labels.
