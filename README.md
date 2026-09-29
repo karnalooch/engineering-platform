@@ -92,7 +92,8 @@ Current repositories that provide both consumption and real-world feedback inclu
 
 - `karnalooch/YetAnotherCyclingSim`;
 - `karnalooch/stunning-pancake` (4VELO);
-- `karnalooch/Karoo-Nexus-Suite`.
+- `karnalooch/Karoo-Nexus-Suite`;
+- `karnalooch/onics-ecommerce` (ONICS / CEL-TRONICS).
 
 Reusable ideas discovered downstream should be evaluated using [UPSTREAM_PROMOTION.md](docs/UPSTREAM_PROMOTION.md). Promote the invariant and reusable mechanism, not product-specific scripts.
 
