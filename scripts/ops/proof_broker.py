@@ -899,7 +899,7 @@ def evaluate_proof(
             f"trusted workflow dispatched from {trusted_ref!r}; "
             f"CI class={ci_plan.get('class')}"
         ),
-        "inputs": inputs,
+        "input_keys": sorted(inputs),
     }
 
 
@@ -1132,8 +1132,8 @@ def main() -> int:
             return 0
 
         if args.command == "reconcile":
-            for result in reconcile(args.repo, args.token, policy, args.apply):
-                print(json.dumps(result, sort_keys=True))
+            reconcile(args.repo, args.token, policy, args.apply)
+            print("proof-broker: reconcile complete")
             return 0
 
         if args.command == "event":
@@ -1153,7 +1153,6 @@ def main() -> int:
                 args.apply,
             )
             for result, should_comment in results:
-                print(json.dumps(result, sort_keys=True))
                 if should_comment and "pr_number" in result:
                     comment_result(
                         args.repo,
@@ -1162,11 +1161,18 @@ def main() -> int:
                         result,
                         args.apply,
                     )
+            print("proof-broker: event processed")
             return 0
 
         raise AssertionError(args.command)
-    except (BrokerError, github_ops.GitHubError) as exc:
+    except BrokerError as exc:
         print(f"proof-broker: BLOCKED - {exc}", file=sys.stderr)
+        return 2
+    except github_ops.GitHubError:
+        print(
+            "proof-broker: BLOCKED - GitHub API request failed",
+            file=sys.stderr,
+        )
         return 2
 
 
