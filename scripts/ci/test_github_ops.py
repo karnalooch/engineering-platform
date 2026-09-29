@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from scripts.ops import github_ops, repository_os
@@ -72,6 +73,22 @@ class GithubOpsContractTests(unittest.TestCase):
             "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
             text,
         )
+
+    def test_artifact_lookup_prefers_latest_nonexpired_match(self):
+        response = {
+            "artifacts": [
+                {"id": 1, "expired": False, "created_at": "2026-01-01T00:00:00Z"},
+                {"id": 2, "expired": True, "created_at": "2026-02-01T00:00:00Z"},
+                {"id": 3, "expired": False, "created_at": "2026-03-01T00:00:00Z"},
+            ]
+        }
+        with mock.patch.object(github_ops, "request", return_value=response):
+            artifact = github_ops.find_build_artifact(
+                "owner/repo",
+                "token",
+                "a" * 64,
+            )
+        self.assertEqual(artifact["id"], 3)
 
     def test_policy_has_unique_label_definitions(self):
         policy = repository_os.load_policy(ROOT / ".gumball" / "repository-os.json")
