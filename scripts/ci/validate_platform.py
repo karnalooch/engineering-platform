@@ -15,6 +15,21 @@ FAIL_OPEN = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
+REQUIRED_GUMBALL_PATHS = (
+    "AGENTS.md",
+    "gumball.yaml",
+    "docs/README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/ADOPTION.md",
+    "docs/CI_MODEL.md",
+    "docs/UPSTREAM_PROMOTION.md",
+    "docs/ONE_PROMPT_BOOTSTRAP.md",
+    "docs/MCP_AND_TOOLS.md",
+    "profiles/standard.yaml",
+    "scripts/gumball.py",
+    "scripts/ci/test_gumball.py",
+)
+
 
 def main() -> int:
     problems: list[str] = []
@@ -22,6 +37,10 @@ def main() -> int:
 
     if not workflows:
         problems.append("no workflow files discovered")
+
+    for relative in REQUIRED_GUMBALL_PATHS:
+        if not (ROOT / relative).is_file():
+            problems.append(f"missing required Gumball contract: {relative}")
 
     for path in workflows:
         text = path.read_text(encoding="utf-8")
