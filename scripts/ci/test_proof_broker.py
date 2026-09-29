@@ -263,7 +263,9 @@ class BrokerDecisionTests(unittest.TestCase):
                 )
         self.assertEqual(result["action"], "DISPATCH")
         dispatch.assert_called_once()
-        self.assertEqual(result["inputs"]["exact_sha"], "c" * 40)
+        self.assertIn("exact_sha", result["input_keys"])
+        dispatched_inputs = dispatch.call_args.args[4]
+        self.assertEqual(dispatched_inputs["exact_sha"], "c" * 40)
 
     def test_automatic_noncritical_heavy_proof_is_deferred(self):
         patches = self.common_patches()
