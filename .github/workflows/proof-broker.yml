@@ -38,7 +38,7 @@ concurrency:
 jobs:
   broker-event:
     name: Proof request broker
-    if: ${{ github.event_name != 'schedule' }}
+    if: ${{ github.event_name != 'schedule' && (github.event_name != 'issue_comment' || startsWith(github.event.comment.body, '/gumball proof ')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
