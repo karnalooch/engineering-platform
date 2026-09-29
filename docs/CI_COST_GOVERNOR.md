@@ -109,3 +109,37 @@ The planner should expose a machine-readable plan including:
 
 The caller-local Aggregate Gate validates the planned expected proof set; it must not require intentionally deferred non-merge-critical evidence.
 
+
+## Build broker convention
+
+Verified heavyweight artifacts use the canonical name:
+
+```text
+gumball-build-<64-char-build-fingerprint>
+```
+
+A CI lane can ask Gumball whether the exact artifact already exists before compiling:
+
+```bash
+python scripts/ops/github_ops.py artifact-find \
+  --fingerprint <64-char-build-fingerprint>
+```
+
+The command returns `REUSE` with the artifact id/download URL when a non-expired exact match exists, otherwise `BUILD`.
+
+The policy decision can then choose:
+
+- `SKIP` — no heavy build is required;
+- `REUSE` — consume the verified artifact;
+- `BUILD` — one heavy build is merge/release-critical and no reusable artifact exists;
+- `DEFER` — heavy proof is not merge-critical and moves to manual/release/nightly.
+
+Example:
+
+```bash
+python scripts/ops/repository_os.py ci-decision \
+  --artifact-available \
+  Source/Game/Foo.cpp
+```
+
+The artifact registry is a reuse mechanism, not a trust shortcut: the artifact still needs the exact build fingerprint and release/proof manifest expected by the consumer.
