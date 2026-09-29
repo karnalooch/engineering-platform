@@ -74,6 +74,36 @@ class GithubOpsContractTests(unittest.TestCase):
             text,
         )
 
+    def test_closing_issue_links_use_github_relation(self):
+        pr = {
+            "node_id": "PR_node",
+            "body": "No closing keyword here",
+        }
+        response = {
+            "node": {
+                "closingIssuesReferences": {
+                    "nodes": [
+                        {
+                            "id": "ISSUE_node",
+                            "number": 42,
+                            "state": "OPEN",
+                            "repository": {"nameWithOwner": "owner/repo"},
+                            "labels": {"nodes": []},
+                        }
+                    ]
+                }
+            }
+        }
+        with mock.patch.object(github_ops, "graphql", return_value=response):
+            with mock.patch.object(github_ops, "request") as rest:
+                issues = github_ops._closing_issues_from_pr(
+                    "owner/repo",
+                    "token",
+                    pr,
+                )
+        self.assertEqual([item["number"] for item in issues], [42])
+        rest.assert_not_called()
+
     def test_artifact_lookup_prefers_latest_nonexpired_match(self):
         response = {
             "artifacts": [
