@@ -164,30 +164,6 @@
       {
         "name": "status:ready",
         "description": "Accepted and ready to start"
-      },
-      {
-        "name": "proof-status:requested",
-        "description": "Proof requested but not yet dispatched"
-      },
-      {
-        "name": "proof-status:running",
-        "description": "Broker-managed proof is queued or running"
-      },
-      {
-        "name": "proof-status:passed",
-        "description": "Broker-managed proof passed for current PR revision"
-      },
-      {
-        "name": "proof-status:failed",
-        "description": "Broker-managed proof failed for current PR revision"
-      },
-      {
-        "name": "proof-status:deferred",
-        "description": "Heavy proof intentionally deferred by CI cost policy"
-      },
-      {
-        "name": "proof-status:reused",
-        "description": "Existing successful proof or artifact reused"
       }
     ]
   },
