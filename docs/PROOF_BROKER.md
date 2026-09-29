@@ -265,9 +265,27 @@ on:
 
 permissions:
   contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact requested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.exact_sha }}
+          persist-credentials: false
+
+      - name: Verify exact SHA before expensive work
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.exact_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${EXPECTED_SHA}"
 ```
 
-The workflow must verify that the checked-out revision equals `exact_sha` before expensive work begins.
+The expensive proof starts only after the exact-revision assertion succeeds.
 
 ## Recovery
 
