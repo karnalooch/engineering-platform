@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from scripts.ci import assert_nonempty, evaluate_aggregate, plan_gumball_ci
+
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class AggregateEvaluatorTests(unittest.TestCase):
@@ -104,6 +108,35 @@ class GumballCiPlannerTests(unittest.TestCase):
         plan = plan_gumball_ci.plan_for_event("push", ["docs/README.md"])
         self.assertEqual("full", plan.classification)
         self.assertTrue(plan.security_required)
+
+
+class ReusableSecurityLightLaneTests(unittest.TestCase):
+    def setUp(self):
+        self.workflow = (
+            ROOT / ".github/workflows/reusable-security.yml"
+        ).read_text(encoding="utf-8")
+
+    def test_light_lane_is_explicit_opt_in(self):
+        self.assertIn("enable_docs_only_light_lane:", self.workflow)
+        self.assertIn("default: false", self.workflow)
+
+    def test_heavy_security_jobs_depend_on_shared_plan(self):
+        for job in ("dependency-review:", "codeql:", "trivy:", "sbom:"):
+            self.assertIn(job, self.workflow)
+        self.assertGreaterEqual(self.workflow.count("needs: plan"), 4)
+        self.assertGreaterEqual(
+            self.workflow.count("needs.plan.outputs.run_heavy == 'true'"),
+            4,
+        )
+
+    def test_docs_only_classification_fails_safe_around_control_plane(self):
+        for marker in (
+            ".github/*|scripts/ci/*|SECURITY.md|*/SECURITY.md",
+            "docs/*|README.md|CHANGELOG.md|*.md",
+            'reason="empty change set; failed safe to full"',
+            'reason="non-pull-request event always requires full security"',
+        ):
+            self.assertIn(marker, self.workflow)
 
 
 if __name__ == "__main__":
