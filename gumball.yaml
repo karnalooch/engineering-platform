@@ -47,3 +47,11 @@ tools:
   manifest: tools/capabilities.yaml
   secrets_in_repo_config: forbidden
   required_tool_unavailable: blocked
+
+repository_os:
+  policy: .gumball/repository-os.json
+  lifecycle: required
+  projects: supported
+  labels: required
+  release_lineage: required_for_release_profiles
+  ci_cost_governor: required
