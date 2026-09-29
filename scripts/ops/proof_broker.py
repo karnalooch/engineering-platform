@@ -1041,31 +1041,24 @@ def handle_event(
             results.append((result, True))
             return results
 
-        if action in {
-            "opened",
-            "reopened",
-            "synchronize",
-            "ready_for_review",
-        }:
-            for proof_id, proof in (policy.get("proofs") or {}).items():
-                if not isinstance(proof, dict) or not proof.get("enabled"):
-                    continue
-                if not (proof.get("automatic") or {}).get("enabled"):
-                    continue
-                result = evaluate_proof(
-                    repo=repo,
-                    token=token,
-                    policy=policy,
-                    proof_id=proof_id,
-                    pr_number=pr_number,
-                    actor=None,
-                    explicit=False,
-                    retry=False,
-                    status_only=False,
-                    apply=apply,
-                )
-                results.append((result, False))
-            return results
+    if event_name == "repository_dispatch":
+        payload = event.get("client_payload") or {}
+        proof_id = str(payload.get("proof") or "")
+        pr_number = int(str(payload.get("pr_number") or "0"))
+        result = evaluate_proof(
+            repo=repo,
+            token=token,
+            policy=policy,
+            proof_id=proof_id,
+            pr_number=pr_number,
+            actor=None,
+            explicit=False,
+            retry=False,
+            status_only=False,
+            apply=apply,
+        )
+        results.append((result, False))
+        return results
 
     if event_name == "workflow_dispatch":
         inputs = event.get("inputs") or {}
