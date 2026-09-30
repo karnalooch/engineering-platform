@@ -51,7 +51,9 @@ The graph follows the shared [Blueprint diagram style](DIAGRAM_STYLE.md), inspir
 | Understand PR vs release/full CI | [CI_MODEL.md](CI_MODEL.md) | **Authoritative** |
 | Promote a downstream improvement upstream | [UPSTREAM_PROMOTION.md](UPSTREAM_PROMOTION.md) | **Authoritative** |
 | Bootstrap with one agent prompt | [ONE_PROMPT_BOOTSTRAP.md](ONE_PROMPT_BOOTSTRAP.md) | **Authoritative prompt contract** |
-| Configure MCP/tool capabilities | [MCP_AND_TOOLS.md](MCP_AND_TOOLS.md) | **Authoritative** |\n| Choose/admit/version engineering tools | [TOOLING_AUTHORITY.md](TOOLING_AUTHORITY.md) | **Authoritative** |\n| Build deterministic visual/design workflows | [VISUAL_ENGINEERING.md](VISUAL_ENGINEERING.md) | **Authoritative for visual profiles** |
+| Configure MCP/tool capabilities | [MCP_AND_TOOLS.md](MCP_AND_TOOLS.md) | **Authoritative** |
+| Choose/admit/version engineering tools | [TOOLING_AUTHORITY.md](TOOLING_AUTHORITY.md) | **Authoritative** |
+| Build deterministic visual/design workflows | [VISUAL_ENGINEERING.md](VISUAL_ENGINEERING.md) | **Authoritative for visual profiles** |
 | Consume reusable workflows | [CONTRACT.md](CONTRACT.md) | **Authoritative caller contract** |
 | Aggregate merge gate | [AGGREGATE_GATE.md](AGGREGATE_GATE.md) | **Authoritative** |
 | Governance | [GOVERNANCE_GUARD.md](GOVERNANCE_GUARD.md) | **Authoritative** |
@@ -72,7 +74,9 @@ The graph follows the shared [Blueprint diagram style](DIAGRAM_STYLE.md), inspir
 10. **Repository lifecycle is finite.** Merged branches, stale PRs/issues and Project cards are reconciled instead of accumulating forever.
 11. **Build once, promote many.** Application versions, delivery stages and artifact digests remain traceable to one exact source revision.
 12. **Classify before computing.** Gumball plans the smallest trustworthy CI proof set before starting heavy builds.
-13. **Intent, not clicking.** Heavy proof requests flow through the trusted Proof Broker with exact-SHA dedupe/reuse; the Actions UI is only a fallback.\n14. **Proven tooling before invention.** Review proven patterns/native capability/proven OSS before adding custom tooling, and keep accepted authority in version control.\n15. **Visual proof is engineering proof.** Repo-owned visual artifacts and workbenches use deterministic fixtures, production components and exact-source evidence.
+13. **Intent, not clicking.** Heavy proof requests flow through the trusted Proof Broker with exact-SHA dedupe/reuse; the Actions UI is only a fallback.
+14. **Proven tooling before invention.** Review proven patterns/native capability/proven OSS before adding custom tooling, and keep accepted authority in version control.
+15. **Visual proof is engineering proof.** Repo-owned visual artifacts and workbenches use deterministic fixtures, production components and exact-source evidence.
 
 ## Current compatibility note
 
