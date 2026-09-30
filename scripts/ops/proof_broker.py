@@ -706,6 +706,23 @@ def comment_result(
     )
 
 
+def comment_result_best_effort(
+    repo: str,
+    token: str,
+    pr_number: int,
+    result: dict[str, Any],
+    apply: bool,
+) -> str | None:
+    try:
+        comment_result(repo, token, pr_number, result, apply)
+    except github_ops.GitHubError as exc:
+        return (
+            "result comment bookkeeping failed; "
+            f"proof action {result.get('action')!r} is preserved: {exc}"
+        )
+    return None
+
+
 def status_from_existing(
     artifact: dict[str, Any] | None,
     run: dict[str, Any] | None,
@@ -1202,18 +1219,16 @@ def main() -> int:
                 if warning:
                     print(f"proof-broker: WARN - {warning}", file=sys.stderr)
                 if should_comment and "pr_number" in result:
-                    try:
-                        comment_result(
-                            args.repo,
-                            args.token,
-                            int(result["pr_number"]),
-                            result,
-                            args.apply,
-                        )
-                    except github_ops.GitHubError as exc:
+                    comment_warning = comment_result_best_effort(
+                        args.repo,
+                        args.token,
+                        int(result["pr_number"]),
+                        result,
+                        args.apply,
+                    )
+                    if comment_warning:
                         print(
-                            "proof-broker: WARN - result comment bookkeeping failed; "
-                            f"proof action {result.get('action')!r} is preserved: {exc}",
+                            f"proof-broker: WARN - {comment_warning}",
                             file=sys.stderr,
                         )
             print("proof-broker: event processed")
