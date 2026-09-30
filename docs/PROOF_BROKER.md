@@ -297,3 +297,5 @@ If broker configuration, workflow contract, requester permission, PR merge state
 
 No proof should be started merely because Gumball could not determine whether it was safe.
 
+After a successful `workflow_dispatch`, status labels and result comments are bookkeeping rather than dispatch authority. If that post-dispatch bookkeeping fails, the broker preserves the successful dispatch, emits a diagnostic **WARN** with the failing GitHub API operation, and relies on the deterministic request id for safe discovery/reconciliation. A bookkeeping repair must never create a second heavyweight run for the same request id.
+
