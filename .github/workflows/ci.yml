@@ -84,6 +84,9 @@ jobs:
         docs/UPSTREAM_PROMOTION.md
         docs/ONE_PROMPT_BOOTSTRAP.md
         docs/MCP_AND_TOOLS.md
+        docs/TOOLING_AUTHORITY.md
+        docs/VISUAL_ENGINEERING.md
+        tools/**
         docs/REPOSITORY_LIFECYCLE.md
         docs/PROJECTS_FLOW.md
         docs/RELEASE_LINEAGE.md
@@ -122,6 +125,7 @@ jobs:
           python scripts/gumball.py doctor
           python scripts/gumball.py promote
           python scripts/ci/check_docs_index.py
+          python scripts/ci/validate_tooling_authority.py
           python -m unittest scripts/ci/test_gumball.py -v
           python -m unittest scripts/ci/test_repository_os.py -v
           python -m unittest scripts/ci/test_github_ops.py -v
