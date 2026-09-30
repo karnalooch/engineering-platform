@@ -117,7 +117,7 @@ Profiles do not grant permission to weaken the baseline.
 
 Product-specific checks remain downstream. Examples include Unreal runtime proofs, Android emulator evidence, Home Lab validation, visual acceptance and hardware tests.
 
-The platform may standardize the **contract** for those proofs without copying their product-specific implementation.
+The platform may standardize the **contract** for those proofs without copying their product-specific implementation. Tooling follows [TOOLING_AUTHORITY.md](TOOLING_AUTHORITY.md); visual profiles additionally follow [VISUAL_ENGINEERING.md](VISUAL_ENGINEERING.md).
 
 ### 5. Feedback loop
 
