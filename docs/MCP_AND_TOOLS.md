@@ -30,7 +30,10 @@ Technology-specific integrations belong in profiles or consumer repositories. Fo
 - Destructive operations require the same authorization as equivalent manual operations.
 - Tool output is evidence only when it corresponds to the current revision and intended environment.
 - A tool failure is reported as FAIL/BLOCKED/NOT RUN, never silently converted to PASS.
-- Agents must distinguish source-of-truth data from convenience tooling.\n- Prefer bounded high-level domain operations over a broad raw low-level agent API.\n- SaaS/editor state without a deterministic repository return path is convenience/research, not authoritative project state.\n- Dev/editor/proof tooling stays outside shipping artifacts unless explicitly promoted and reviewed.
+- Agents must distinguish source-of-truth data from convenience tooling.
+- Prefer bounded high-level domain operations over a broad raw low-level agent API.
+- SaaS/editor state without a deterministic repository return path is convenience/research, not authoritative project state.
+- Dev/editor/proof tooling stays outside shipping artifacts unless explicitly promoted and reviewed.
 
 ## MCP configuration
 
