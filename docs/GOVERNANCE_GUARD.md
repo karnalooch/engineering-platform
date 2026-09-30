@@ -10,6 +10,7 @@ On every caller repository it:
 - requires the exact PR-body marker `Auto-merge: manual` when high-risk paths are touched;
 - rejects mutable or otherwise non-immutable external GitHub Action/workflow refs;
 - rejects mutable `engineering-platform` consumer refs such as `@main`, `@master`, or a tag;
+- rejects consumers that mix multiple valid `engineering-platform` SHAs across active workflow calls;
 - rejects fail-open `continue-on-error: true` in GitHub Actions workflows;
 - rejects workflow-level `permissions: write-all`;
 - requires a caller-local `Aggregate CI gate` whose own job block contains `if: ${{ always() }}`.
@@ -93,7 +94,7 @@ Consumer repositories must call shared workflows with a reviewed full commit SHA
 uses: karnalooch/engineering-platform/.github/workflows/reusable-governance.yml@0123456789abcdef0123456789abcdef01234567
 ```
 
-Mutable refs such as `@main`, `@master`, `@v1` or `@v1.2.3` are rejected by the guard.
+Mutable refs such as `@main`, `@master`, `@v1` or `@v1.2.3` are rejected by the guard. A consumer may contain many active Gumball workflow calls, but every `karnalooch/engineering-platform/.github/workflows/*` call must resolve to the same reviewed 40-character SHA. Two individually valid but different platform SHAs fail closed as a mixed-platform-version configuration.
 
 ## Aggregate ownership
 

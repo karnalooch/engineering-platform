@@ -39,6 +39,15 @@ class GovernanceWorkflowContractTests(unittest.TestCase):
             self.text,
         )
 
+    def test_consumer_must_use_one_platform_revision(self):
+        self.assertIn("platform_refs: set[str] = set()", self.text)
+        self.assertIn("platform_refs.add(ref)", self.text)
+        self.assertIn("if len(platform_refs) > 1:", self.text)
+        self.assertIn(
+            "consumer mixes multiple engineering-platform revisions",
+            self.text,
+        )
+
     def test_exception_is_forwarded_through_explicit_environment(self):
         self.assertIn(
             "ALLOW_DEPENDABOT_HIGH_RISK_WITHOUT_MANUAL_MARKER:",
