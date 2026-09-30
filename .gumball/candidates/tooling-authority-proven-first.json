@@ -1,0 +1,21 @@
+{
+  "id": "tooling-authority-proven-first",
+  "source": "karnalooch/YetAnotherCyclingSim",
+  "category": "tooling",
+  "problem": "Project tooling can drift into bespoke infrastructure, ambiguous vendor claims, unlocked helper dependency graphs, or editor tooling that leaks into shipping runtime.",
+  "invariant": "Evaluate proven public patterns/reviewed tools, then platform-native capability, then proven OSS/DCC, then minimal custom tooling; keep exact provenance and dependency locks, prefer bounded domain operations, and exclude dev/editor/proof tools from shipping by default.",
+  "evidence": [
+    "YACS PR #281 / merge d5d8dd4e2eb83af362ea4c743b83bf1701ab5509",
+    "YACS PR #283 / merge 19ed6a3fc867c6d788be54d159acc64bf369eb02",
+    "RoadForge Editor-only lifecycle boundary",
+    "ue-mcp exact upstream revision + lockfile + reproducible install drift guard"
+  ],
+  "do_not_copy": [
+    "Embark as a mandatory vendor",
+    "SkyHook or embark-claude-index as required dependencies",
+    "RoadForge implementation details",
+    "YACS Unreal paths, route names or proof workflow identifiers"
+  ],
+  "failure_behavior": "Fail closed when a declared authoritative tool lacks its repository return path/provenance/lock/lifecycle boundary or when a dev/editor-only contract drifts into shipping.",
+  "status": "platform"
+}

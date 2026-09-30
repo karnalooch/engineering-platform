@@ -20,7 +20,9 @@ Good candidates include reusable improvements to:
 - MCP/tool capability boundaries;
 - release/proof separation;
 - developer or repository doctor tooling;
-- deterministic automation.
+- deterministic automation;
+- tooling authority, supply-chain and lifecycle boundaries;
+- repo-owned visual/design interchange and deterministic workbench contracts.
 
 ## What not to promote
 

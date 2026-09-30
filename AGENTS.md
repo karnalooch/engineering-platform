@@ -40,6 +40,14 @@ When YACS, 4VELO, ONICS, Karoo or another consumer introduces a useful improveme
 
 Use `docs/UPSTREAM_PROMOTION.md` for the promotion contract.
 
+## Tooling authority
+
+Before inventing project tooling, apply `docs/TOOLING_AUTHORITY.md`: review proven public patterns/already-reviewed tools, then platform-native capability, then proven OSS/DCC, and only then minimal custom tooling. Accepted tool output must return deterministically to version control; SaaS-only state is not an engineering SSOT.
+
+Keep editor/dev/proof tools outside shipping artifacts by default, record exact upstream/license/lock provenance for production tooling, and prefer bounded domain operations over broad low-level agent APIs.
+
+For visual profiles, use `docs/VISUAL_ENGINEERING.md`: composition first, repo-owned artifacts, production-component workbenches, deterministic fixtures and asset-off inspection.
+
 ## Documentation
 
 `docs/README.md` is the documentation router and authority map.

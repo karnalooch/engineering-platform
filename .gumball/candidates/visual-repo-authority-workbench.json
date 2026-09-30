@@ -1,0 +1,22 @@
+{
+  "id": "visual-repo-authority-workbench",
+  "source": "karnalooch/stunning-pancake",
+  "category": "tooling",
+  "problem": "Visual work can become split across SaaS workspaces, mock replicas and non-deterministic screenshots, making repository review and exact-SHA proof unreliable.",
+  "invariant": "Accepted visual authority returns deterministically to the repository; composition precedes decorative assets; generated bridges are content-validated; workbenches reuse production components/formatting with deterministic fixtures, stable proof identifiers and asset-off inspection.",
+  "evidence": [
+    "4VELO PR #398 composition-first visual architecture",
+    "4VELO PR #400 GitHub/repository return-path qualification",
+    "4VELO PR #402 repo-owned deterministic design-token bridge",
+    "4VELO PR #403 repo-owned style artifact with provenance/attribution guard",
+    "4VELO PR #407 deterministic production-component visual workbench"
+  ],
+  "do_not_copy": [
+    "Figma, Maputnik or Storybook as mandatory platform dependencies",
+    "4VELO map palette, route styling or mobile screen names",
+    "4VELO production assets and metric registry",
+    "vendor-specific SaaS configuration or secrets"
+  ],
+  "failure_behavior": "Treat SaaS-only state as research-only; fail closed when authoritative generated artifacts drift, required provenance/attribution is missing, or deterministic workbench boundaries disappear.",
+  "status": "platform"
+}

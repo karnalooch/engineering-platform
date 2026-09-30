@@ -115,7 +115,7 @@ The Gumball platform repository applies the same cost-governor contract to itsel
 
 For pull requests that change only `docs/**`, `README.md`, or `CHANGELOG.md`, the planner classifies the change as `docs-only` and skips the heavyweight reusable security baseline (CodeQL, Trivy, and dependency review). Repository policy, governance, workflow-contract validation, and the caller-local `Aggregate CI gate` still run.
 
-Any CI/workflow, script, source, configuration, security-policy, mixed, empty, or otherwise unknown change fails safe to full validation. Push and manual-dispatch events also always use the full security baseline.
+Any CI/workflow, script, source, configuration, security-policy, mixed, empty, or otherwise unknown change fails safe to full validation. **Dependency manifests, lockfiles, package-manager overrides and dependency-security configuration are always full-security changes**; they must not inherit a docs/light classification merely because product code is unchanged. Push and manual-dispatch events also always use the full security baseline.
 
 The Aggregate gate consumes the same planner output and rejects both missing required security evidence and an unexpectedly executed heavy security lane for a docs-only plan. This makes cost regressions visible instead of silently reintroducing expensive work.
 

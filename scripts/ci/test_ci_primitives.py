@@ -91,6 +91,22 @@ class GumballCiPlannerTests(unittest.TestCase):
         self.assertEqual("full", plan.classification)
         self.assertTrue(plan.security_required)
 
+    def test_dependency_manifest_forces_full_security(self):
+        plan = plan_gumball_ci.plan_for_event(
+            "pull_request",
+            ["package.json"],
+        )
+        self.assertEqual("full", plan.classification)
+        self.assertTrue(plan.security_required)
+
+    def test_dependency_lockfile_forces_full_security(self):
+        plan = plan_gumball_ci.plan_for_event(
+            "pull_request",
+            ["pnpm-lock.yaml"],
+        )
+        self.assertEqual("full", plan.classification)
+        self.assertTrue(plan.security_required)
+
     def test_mixed_docs_and_code_forces_full_security(self):
         plan = plan_gumball_ci.plan_for_event(
             "pull_request",

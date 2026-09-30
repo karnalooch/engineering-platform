@@ -8,5 +8,10 @@ capabilities:
   build_fingerprint: required
   artifact_fingerprint_reuse: required
   proof_broker: required
+  proven_tooling_first: required
+  editor_tool_shipping_boundary: required
+  production_tool_dependency_lock: required
+  tool_provenance: required
+  bounded_domain_agent_operations: recommended
 heavy_pr_proofs: disabled_by_default
 automatic_heavy_build_lanes_max: 1

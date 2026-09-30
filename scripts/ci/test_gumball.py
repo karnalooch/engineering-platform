@@ -28,6 +28,9 @@ class GumballTests(unittest.TestCase):
             self.assertTrue((root / "gumball.yaml").exists())
             self.assertTrue((root / "docs" / "README.md").exists())
             self.assertTrue((root / "docs" / "DIAGRAM_STYLE.md").exists())
+            self.assertTrue((root / "docs" / "TOOLING_AUTHORITY.md").exists())
+            self.assertTrue((root / "tools" / "authority-policy.json").exists())
+            self.assertFalse((root / "docs" / "VISUAL_ENGINEERING.md").exists())
             self.assertTrue((root / ".gumball" / "repository-os.json").exists())
             self.assertTrue((root / ".gumball" / "proof-broker.json").exists())
             self.assertTrue((root / "scripts" / "ops" / "repository_os.py").exists())
@@ -38,6 +41,12 @@ class GumballTests(unittest.TestCase):
             self.assertTrue((root / "docs" / "PROOF_BROKER.md").exists())
             self.assertTrue((root / "templates" / "release-manifest.json").exists())
 
+    def test_visual_profile_applies_visual_engineering_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            gumball.apply_baseline(root, "mobile", write=True)
+            self.assertTrue((root / "docs" / "VISUAL_ENGINEERING.md").exists())
+
     def test_doctor_accepts_minimal_fail_closed_repository(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -47,6 +56,9 @@ class GumballTests(unittest.TestCase):
             (root / "AGENTS.md").write_text("# rules\n", encoding="utf-8")
             (root / "docs" / "README.md").write_text("# docs\n", encoding="utf-8")
             (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\n", encoding="utf-8")
+            (root / "docs" / "TOOLING_AUTHORITY.md").write_text("# tooling\n", encoding="utf-8")
+            (root / "tools").mkdir()
+            (root / "tools" / "authority-policy.json").write_text("{}\n", encoding="utf-8")
             (root / ".gumball").mkdir(exist_ok=True)
             (root / ".gumball" / "repository-os.json").write_text("{}\n", encoding="utf-8")
             (root / ".gumball" / "proof-broker.json").write_text("{}\n", encoding="utf-8")
@@ -82,6 +94,9 @@ jobs:
             (root / "AGENTS.md").write_text("# rules\n", encoding="utf-8")
             (root / "docs" / "README.md").write_text("# docs\n", encoding="utf-8")
             (root / "docs" / "DIAGRAM_STYLE.md").write_text("# diagrams\n", encoding="utf-8")
+            (root / "docs" / "TOOLING_AUTHORITY.md").write_text("# tooling\n", encoding="utf-8")
+            (root / "tools").mkdir()
+            (root / "tools" / "authority-policy.json").write_text("{}\n", encoding="utf-8")
             (root / ".gumball").mkdir(exist_ok=True)
             (root / ".gumball" / "repository-os.json").write_text("{}\n", encoding="utf-8")
             (root / ".gumball" / "proof-broker.json").write_text("{}\n", encoding="utf-8")
@@ -185,6 +200,18 @@ jobs:
             audit = gumball.audit_repository(root)
 
             self.assertTrue(audit["capabilities"]["mcp_config"])
+
+    def test_audit_detects_tooling_authority_contract(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs").mkdir()
+            (root / "tools").mkdir()
+            (root / "docs" / "TOOLING_AUTHORITY.md").write_text("# tooling\n", encoding="utf-8")
+            (root / "tools" / "authority-policy.json").write_text("{}\n", encoding="utf-8")
+
+            audit = gumball.audit_repository(root)
+
+            self.assertTrue(audit["contracts"]["tooling_authority"])
 
     def test_candidate_contract(self):
         with tempfile.TemporaryDirectory() as tmp:

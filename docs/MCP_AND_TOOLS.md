@@ -6,7 +6,7 @@ Status: **ACTIVE / AUTHORITATIVE**
 
 Gumball describes **capabilities and trust boundaries**, not a mandatory shopping list of tools.
 
-A project should enable only the tools needed for its work.
+A project should enable only the tools needed for its work. Tool selection and lifecycle follow [TOOLING_AUTHORITY.md](TOOLING_AUTHORITY.md): proven/reference tooling and platform-native capability are evaluated before custom tooling, and accepted authority must have a deterministic repository return path.
 
 ## Capability classes
 
@@ -31,6 +31,9 @@ Technology-specific integrations belong in profiles or consumer repositories. Fo
 - Tool output is evidence only when it corresponds to the current revision and intended environment.
 - A tool failure is reported as FAIL/BLOCKED/NOT RUN, never silently converted to PASS.
 - Agents must distinguish source-of-truth data from convenience tooling.
+- Prefer bounded high-level domain operations over a broad raw low-level agent API.
+- SaaS/editor state without a deterministic repository return path is convenience/research, not authoritative project state.
+- Dev/editor/proof tooling stays outside shipping artifacts unless explicitly promoted and reviewed.
 
 ## MCP configuration
 
