@@ -169,6 +169,7 @@ jobs:
 
           problems: list[str] = []
           notes: list[str] = []
+          platform_refs: set[str] = set()
           workflow_files = sorted(
               [*WORKFLOW_DIR.glob("*.yml"), *WORKFLOW_DIR.glob("*.yaml")]
           )
@@ -271,20 +272,30 @@ jobs:
 
                   owner_path, ref = target.rsplit("@", 1)
 
-                  if (
-                      owner_path.startswith(PLATFORM_REPOSITORY + "/")
-                      and not SHA40.fullmatch(ref)
-                  ):
-                      problems.append(
-                          f"{path.relative_to(ROOT)}: engineering-platform "
-                          f"consumer ref must be a full 40-char SHA: {target}"
-                      )
+                  if owner_path.startswith(PLATFORM_REPOSITORY + "/"):
+                      if SHA40.fullmatch(ref):
+                          platform_refs.add(ref)
+                      else:
+                          problems.append(
+                              f"{path.relative_to(ROOT)}: engineering-platform "
+                              f"consumer ref must be a full 40-char SHA: {target}"
+                          )
 
                   if not SHA40.fullmatch(ref):
                       problems.append(
                           f"{path.relative_to(ROOT)}: external action/workflow "
                           f"must be pinned to a full 40-char SHA: {target}"
                       )
+
+          if len(platform_refs) > 1:
+              problems.append(
+                  "consumer mixes multiple engineering-platform revisions: "
+                  + ", ".join(sorted(platform_refs))
+              )
+          elif len(platform_refs) == 1:
+              notes.append(
+                  "engineering-platform revision: " + next(iter(platform_refs))
+              )
 
           # 3. Preserve a real caller-local aggregate boundary.
           aggregate_name_found = False
