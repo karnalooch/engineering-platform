@@ -465,6 +465,35 @@ class BrokerDecisionTests(unittest.TestCase):
         rerun.assert_called_once_with("owner/repo", "token", 19)
 
 
+class BookkeepingTests(unittest.TestCase):
+    def test_comment_failure_is_warning_and_preserves_action(self):
+        result = {
+            "action": "DISPATCH",
+            "proof": "geometry",
+            "pr_number": 23,
+            "request_id": "gb-geometry-pr23-abc",
+        }
+        error = proof_broker.github_ops.GitHubError(
+            "POST /repos/owner/repo/issues/23/comments: HTTP 403: forbidden"
+        )
+        with mock.patch.object(
+            proof_broker,
+            "comment_result",
+            side_effect=error,
+        ):
+            warning = proof_broker.comment_result_best_effort(
+                "owner/repo",
+                "token",
+                23,
+                result,
+                True,
+            )
+
+        self.assertIsNotNone(warning)
+        self.assertIn("result comment bookkeeping failed", warning)
+        self.assertIn("DISPATCH", warning)
+
+
 class EventTests(unittest.TestCase):
     def test_repository_dispatch_drives_automatic_policy(self):
         event = {
