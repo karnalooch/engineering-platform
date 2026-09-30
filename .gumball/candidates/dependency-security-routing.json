@@ -1,0 +1,19 @@
+{
+  "id": "dependency-security-routing",
+  "source": "karnalooch/stunning-pancake",
+  "category": "security",
+  "problem": "A dependency-only pull request can be misclassified as cheap/non-runtime work and skip the scanner that is specifically needed to evaluate new vulnerable dependency state.",
+  "invariant": "Dependency manifests, lockfiles, package-manager overrides and dependency-security configuration always route to the full dependency/security evidence set, regardless of whether product source code changed.",
+  "evidence": [
+    "4VELO PR #404 dependency advisories and fail-closed Trivy routing",
+    "Gumball docs-only security planner already classifies every non-doc path as full",
+    "Gumball v0.7 adds explicit regression tests for manifest and lockfile routing"
+  ],
+  "do_not_copy": [
+    "4VELO package names",
+    "specific PyJWT or brace-expansion versions",
+    "4VELO workspace path classifier implementation"
+  ],
+  "failure_behavior": "Fail closed to full security when dependency-affecting paths change; never silently inherit a docs/light lane.",
+  "status": "platform"
+}
