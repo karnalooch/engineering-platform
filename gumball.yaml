@@ -1,6 +1,6 @@
 schema_version: 1
 name: Gumball
-platform_version: 0.6.0
+platform_version: 0.7.0
 
 adoption:
   mode: preserve-local
@@ -45,6 +45,11 @@ promotion:
 
 tools:
   manifest: tools/capabilities.yaml
+  authority_policy: tools/authority-policy.json
+  authority: repository
+  admission_policy: proven-before-custom
+  authoritative_external_tool_return_path: deterministic-required
+  dev_editor_proof_shipping_default: excluded
   secrets_in_repo_config: forbidden
   required_tool_unavailable: blocked
 
