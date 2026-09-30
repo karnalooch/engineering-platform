@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from scripts import gumball
+from scripts.ops.proof_broker import BrokerError, resolve_proof_revision
 
 
 class GumballTests(unittest.TestCase):
@@ -212,6 +213,84 @@ jobs:
             audit = gumball.audit_repository(root)
 
             self.assertTrue(audit["contracts"]["tooling_authority"])
+
+    def test_proof_broker_open_pr_uses_exact_head_revision(self):
+        sha = "a" * 40
+        pr = {
+            "state": "open",
+            "head": {
+                "ref": "feat/example",
+                "sha": sha,
+                "repo": {"full_name": "owner/repo"},
+            },
+            "base": {"ref": "main"},
+            "merge_commit_sha": "b" * 40,
+        }
+
+        branch, resolved_sha = resolve_proof_revision(
+            "owner/repo",
+            pr,
+            allow_merged=False,
+        )
+
+        self.assertEqual("feat/example", branch)
+        self.assertEqual(sha, resolved_sha)
+
+    def test_proof_broker_explicit_merged_pr_uses_merge_commit_sha(self):
+        sha = "c" * 40
+        pr = {
+            "state": "closed",
+            "merged_at": "2026-09-30T17:30:00Z",
+            "head": {
+                "ref": "feat/example",
+                "sha": "a" * 40,
+                "repo": {"full_name": "owner/repo"},
+            },
+            "base": {"ref": "main"},
+            "merge_commit_sha": sha,
+        }
+
+        branch, resolved_sha = resolve_proof_revision(
+            "owner/repo",
+            pr,
+            allow_merged=True,
+        )
+
+        self.assertEqual("main", branch)
+        self.assertEqual(sha, resolved_sha)
+
+    def test_proof_broker_automatic_merged_pr_remains_blocked(self):
+        pr = {
+            "state": "closed",
+            "merged_at": "2026-09-30T17:30:00Z",
+            "base": {"ref": "main"},
+            "merge_commit_sha": "c" * 40,
+        }
+
+        with self.assertRaisesRegex(
+            BrokerError,
+            "explicit trusted request",
+        ):
+            resolve_proof_revision(
+                "owner/repo",
+                pr,
+                allow_merged=False,
+            )
+
+    def test_proof_broker_closed_unmerged_pr_remains_blocked(self):
+        pr = {
+            "state": "closed",
+            "merged_at": None,
+            "base": {"ref": "main"},
+            "merge_commit_sha": None,
+        }
+
+        with self.assertRaisesRegex(BrokerError, "closed-unmerged"):
+            resolve_proof_revision(
+                "owner/repo",
+                pr,
+                allow_merged=True,
+            )
 
     def test_candidate_contract(self):
         with tempfile.TemporaryDirectory() as tmp:

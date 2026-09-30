@@ -14,14 +14,14 @@ A trusted user should be able to request a configured proof directly from a pull
 
 or by applying the configured `proof:<proof-id>` label.
 
-The broker validates the request, exact PR revision, proof allow-list, workflow contract, duplicate state and CI-cost policy before dispatching anything.
+The broker validates the request, exact proof revision, proof allow-list, workflow contract, duplicate state and CI-cost policy before dispatching anything. For an open PR the exact revision is its current head SHA; after merge, an explicit trusted request may target the immutable `merge_commit_sha` recorded by GitHub.
 
 ## Control flow
 
 ```mermaid
 flowchart LR
     INTENT["INTENT<br/>PR label / comment"] --> AUTH["AUTHORIZE<br/>write+ permission"]
-    AUTH --> PR["RESOLVE<br/>PR branch + exact SHA"]
+    AUTH --> PR["RESOLVE<br/>Open head SHA / merged result SHA"]
     PR --> POLICY["POLICY<br/>allow-listed proof"]
     POLICY --> COST["COST GOVERNOR<br/>light / standard / heavy"]
 
@@ -61,7 +61,7 @@ The default contract is:
 
 1. broker definition/script comes from the repository default branch;
 2. target proof workflow definition also comes from the default branch;
-3. the PR head branch and exact 40-character SHA are passed as explicit workflow inputs;
+3. the selected source branch and exact 40-character SHA are passed as explicit workflow inputs; open PRs use the head revision, while explicit post-merge requests use the PR base branch plus GitHub's `merge_commit_sha`;
 4. the proof workflow checks out the requested source SHA using read-only repository access;
 5. the proof workflow's `run-name` includes the deterministic Gumball request id.
 
@@ -74,8 +74,10 @@ Branch-local workflow definitions are disabled by default.
 A request is keyed by:
 
 ```text
-proof-id + PR number + exact PR head SHA
+proof-id + PR number + exact selected proof SHA
 ```
+
+For an open PR, the selected proof SHA is the current head SHA. For an explicitly requested proof on a merged PR, it is GitHub's recorded `merge_commit_sha`. Closed-unmerged PRs are never eligible.
 
 For example:
 
@@ -124,8 +126,8 @@ Example:
 
 Supported input tokens:
 
-- `$branch` — PR head branch;
-- `$sha` — exact PR head SHA;
+- `$branch` — PR head branch while open, or the PR base branch for an explicit merged-PR proof;
+- `$sha` — exact PR head SHA while open, or GitHub's exact `merge_commit_sha` after merge;
 - `$pr_number` — pull request number;
 - `$request_id` — deterministic broker request id;
 - `$proof` — proof id.
@@ -139,6 +141,8 @@ Other values are passed literally.
 ```text
 /gumball proof r4-1b3-geometry
 ```
+
+The same explicit command is valid on a merged PR. In that case the broker binds the proof to the recorded merge result SHA rather than to the former feature-branch head. This supports the safe `merge -> exact-SHA runtime/visual proof` workflow without reopening the PR or creating synthetic commits. Because the hourly reconciler intentionally scans only open PRs, a comment-triggered post-merge proof is tracked by its deterministic request id, run and status result rather than by re-adding the request label after closure.
 
 Explicit retry after a failed run:
 
@@ -289,7 +293,7 @@ The expensive proof starts only after the exact-revision assertion succeeds.
 
 ## Recovery
 
-If broker configuration, workflow contract, requester permission or Projects/API access is ambiguous, the broker returns **BLOCKED** and does not dispatch.
+If broker configuration, workflow contract, requester permission, PR merge state or Projects/API access is ambiguous, the broker returns **BLOCKED** and does not dispatch. A closed PR that was not merged remains ineligible, and automatic dispatch is not allowed to wake up a merged PR.
 
 No proof should be started merely because Gumball could not determine whether it was safe.
 
