@@ -297,5 +297,5 @@ If broker configuration, workflow contract, requester permission, PR merge state
 
 No proof should be started merely because Gumball could not determine whether it was safe.
 
-After a successful `workflow_dispatch`, status labels and result comments are bookkeeping rather than dispatch authority. If that post-dispatch bookkeeping fails, the broker preserves the successful dispatch, emits a diagnostic **WARN** with the failing GitHub API operation, and relies on the deterministic request id for safe discovery/reconciliation. A bookkeeping repair must never create a second heavyweight run for the same request id.
+Status labels and result comments are bookkeeping rather than proof authority. Once the broker has authoritatively resolved an outcome from policy plus run/artifact state — for example `DISPATCH`, `ALREADY_RUNNING`, `REUSE`, `REUSE_RUN`, `FAILED_EXISTING`, `RERUN`, `DEFER`, or a status-only query — a later status-label/comment write failure preserves that outcome and is emitted as a diagnostic **WARN** with the failing GitHub API operation. Fresh `workflow_dispatch` and workflow rerun API calls themselves remain fail-closed: if those authoritative operations fail, the broker returns **BLOCKED**. Deterministic request ids remain the dedupe key, so repairing bookkeeping must never create a second heavyweight run for the same request.
 
