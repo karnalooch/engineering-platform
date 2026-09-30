@@ -142,7 +142,7 @@ Other values are passed literally.
 /gumball proof r4-1b3-geometry
 ```
 
-The same explicit command is valid on a merged PR. In that case the broker binds the proof to the recorded merge result SHA rather than to the former feature-branch head. This supports the safe `merge -> exact-SHA runtime/visual proof` workflow without reopening the PR or creating synthetic commits.
+The same explicit command is valid on a merged PR. In that case the broker binds the proof to the recorded merge result SHA rather than to the former feature-branch head. This supports the safe `merge -> exact-SHA runtime/visual proof` workflow without reopening the PR or creating synthetic commits. Because the hourly reconciler intentionally scans only open PRs, a comment-triggered post-merge proof is tracked by its deterministic request id, run and status result rather than by re-adding the request label after closure.
 
 Explicit retry after a failed run:
 
