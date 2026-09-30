@@ -8,5 +8,10 @@ capabilities:
   build_once_promote_many: required
   artifact_fingerprint_reuse: required
   proof_broker: recommended
+  visual_composition_authority: recommended
+  repo_owned_visual_artifacts: recommended
+  deterministic_visual_workbench: recommended
+  deterministic_design_interchange: recommended
+  asset_off_visual_test: recommended
 heavy_pr_proofs: targeted
 automatic_heavy_build_lanes_max: 1
