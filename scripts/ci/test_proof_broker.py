@@ -267,6 +267,64 @@ class BrokerDecisionTests(unittest.TestCase):
         dispatched_inputs = dispatch.call_args.args[4]
         self.assertEqual(dispatched_inputs["exact_sha"], "c" * 40)
 
+    def test_post_dispatch_status_failure_preserves_dispatch_result(self):
+        patches = self.common_patches()
+        error = proof_broker.github_ops.GitHubError(
+            "PUT /repos/owner/repo/issues/23/labels: HTTP 403: forbidden"
+        )
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[8]:
+            with mock.patch.object(
+                proof_broker,
+                "set_status_label",
+                side_effect=error,
+            ):
+                with mock.patch.object(proof_broker, "dispatch_workflow") as dispatch:
+                    result = proof_broker.evaluate_proof(
+                        repo="owner/repo",
+                        token="token",
+                        policy=enabled_policy(),
+                        proof_id="geometry",
+                        pr_number=23,
+                        actor="owner",
+                        explicit=True,
+                        retry=False,
+                        status_only=False,
+                        apply=True,
+                    )
+
+        self.assertEqual(result["action"], "DISPATCH")
+        self.assertIn("post-dispatch status bookkeeping failed", result["warning"])
+        dispatch.assert_called_once()
+
+    def test_dispatch_api_failure_remains_blocking_before_status_bookkeeping(self):
+        patches = self.common_patches()
+        error = proof_broker.github_ops.GitHubError(
+            "POST /repos/owner/repo/actions/workflows/proof.yml/dispatches: "
+            "HTTP 403: forbidden"
+        )
+        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patches[7] as status, patches[8]:
+            with mock.patch.object(
+                proof_broker,
+                "dispatch_workflow",
+                side_effect=error,
+            ) as dispatch:
+                with self.assertRaises(proof_broker.github_ops.GitHubError):
+                    proof_broker.evaluate_proof(
+                        repo="owner/repo",
+                        token="token",
+                        policy=enabled_policy(),
+                        proof_id="geometry",
+                        pr_number=23,
+                        actor="owner",
+                        explicit=True,
+                        retry=False,
+                        status_only=False,
+                        apply=True,
+                    )
+
+        dispatch.assert_called_once()
+        status.assert_not_called()
+
     def test_automatic_noncritical_heavy_proof_is_deferred(self):
         patches = self.common_patches()
         with patches[0], patches[1], patches[2], patches[3], patches[4], patches[7]:
