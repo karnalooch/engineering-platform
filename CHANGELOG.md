@@ -2,6 +2,23 @@
 
 All notable Gumball / engineering-platform contract changes are recorded here.
 
+## 0.7.0 — Tooling authority and visual engineering
+
+- promote YACS' proven-tooling-first architecture rule: review proven public patterns/already-reviewed tooling, then platform-native capability, then proven OSS/DCC, then minimal custom tooling;
+- make the repository the authority for accepted tooling artifacts and require deterministic repository return paths for authoritative external editors/SaaS tools;
+- add machine-readable `tools/authority-policy.json` plus a CI drift validator for admission order, provenance, generated-artifact freshness, lifecycle and fail-closed behavior;
+- require exact upstream/license evidence and locked production-tool dependency graphs, with dev/editor/proof tooling excluded from shipping artifacts by default;
+- prefer bounded high-level domain operations over broad low-level agent APIs;
+- promote 4VELO's composition-first, asset-second visual engineering contract including the asset-off test;
+- add repo-owned visual interchange rules: generated bridges derive from repository sources and validate by content/digest rather than modification time;
+- add the deterministic repo-native visual-workbench contract: production components/formatters, stable fixtures/proof identifiers, proof-only live-state overrides and a hard dev-only boundary;
+- extend mobile and Unreal profiles with reusable visual/tooling authority capabilities without making Figma, Maputnik, Embark tooling or any other vendor mandatory;
+- make tooling authority part of conservative Gumball adoption and add visual-engineering documentation automatically for mobile/Unreal profiles;
+- explicitly lock dependency manifests, lockfiles, overrides and dependency-security configuration to the full security lane and add regression tests;
+- record platform promotion provenance from YACS PRs #281/#283 and 4VELO PRs #398/#400/#402/#403/#404/#407.
+
+Canonical consumer SHA: assigned from the v0.7.0 merge commit after merge.
+
 ## 0.6.0 — Proof Broker
 
 - add `.gumball/proof-broker.json` allow-list and broker policy;
