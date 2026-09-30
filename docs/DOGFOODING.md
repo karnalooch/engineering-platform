@@ -42,7 +42,8 @@ The visual style deliberately mirrors an Unreal Engine / Blueprint node graph: d
 When `gumball doctor` detects the Gumball source repository, it additionally requires:
 
 - this dogfooding contract;
-- the Gumball tool capability manifest;
+- the Gumball tool capability manifest and machine-readable tooling authority policy;
+- the tooling-authority and visual-engineering contracts plus their drift validator;
 - the shared Blueprint diagram style contract that is also propagated to consumers;
 - the repository OS policy, lifecycle/release/labels/CI-cost contracts and trusted reconciler workflow;
 - the Proof Broker policy, trusted dispatch workflow and exact-SHA/dedupe contract;
