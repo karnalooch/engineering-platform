@@ -92,6 +92,8 @@ Examples:
 
 - repository policy;
 - documentation governance;
+- tooling authority and provenance;
+- deterministic visual/design engineering;
 - lint/typecheck/unit test;
 - security analysis;
 - build;
