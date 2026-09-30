@@ -293,8 +293,199 @@ class BrokerDecisionTests(unittest.TestCase):
                     )
 
         self.assertEqual(result["action"], "DISPATCH")
-        self.assertIn("post-dispatch status bookkeeping failed", result["warning"])
+        self.assertIn("status-label bookkeeping failed", result["warning"])
         dispatch.assert_called_once()
+
+    def test_existing_running_status_failure_preserves_dedupe_result(self):
+        patches = self.common_patches()
+        error = proof_broker.github_ops.GitHubError(
+            "PUT /repos/owner/repo/issues/23/labels: HTTP 403: forbidden"
+        )
+        run = {
+            "id": 31,
+            "status": "in_progress",
+            "conclusion": None,
+            "html_url": "https://example/run/31",
+        }
+        with patches[0], patches[1], patches[2], patches[8]:
+            with mock.patch.object(
+                proof_broker,
+                "find_existing_run",
+                return_value=run,
+            ):
+                with mock.patch.object(
+                    proof_broker,
+                    "set_status_label",
+                    side_effect=error,
+                ):
+                    with mock.patch.object(
+                        proof_broker,
+                        "dispatch_workflow",
+                    ) as dispatch:
+                        result = proof_broker.evaluate_proof(
+                            repo="owner/repo",
+                            token="token",
+                            policy=enabled_policy(),
+                            proof_id="geometry",
+                            pr_number=23,
+                            actor="owner",
+                            explicit=True,
+                            retry=False,
+                            status_only=False,
+                            apply=True,
+                        )
+
+        self.assertEqual(result["action"], "ALREADY_RUNNING")
+        self.assertIn("status-label bookkeeping failed", result["warning"])
+        dispatch.assert_not_called()
+
+    def test_reused_artifact_status_failure_preserves_reuse_result(self):
+        patches = self.common_patches()
+        error = proof_broker.github_ops.GitHubError(
+            "PUT /repos/owner/repo/issues/23/labels: HTTP 403: forbidden"
+        )
+        artifact = {
+            "id": 77,
+            "name": "proof-geometry-" + ("c" * 40),
+            "archive_download_url": "https://example/artifact/77",
+        }
+        with patches[0], patches[1], patches[3], patches[8]:
+            with mock.patch.object(
+                proof_broker,
+                "find_artifact",
+                return_value=artifact,
+            ):
+                with mock.patch.object(
+                    proof_broker,
+                    "set_status_label",
+                    side_effect=error,
+                ):
+                    result = proof_broker.evaluate_proof(
+                        repo="owner/repo",
+                        token="token",
+                        policy=enabled_policy(),
+                        proof_id="geometry",
+                        pr_number=23,
+                        actor="owner",
+                        explicit=True,
+                        retry=False,
+                        status_only=False,
+                        apply=True,
+                    )
+
+        self.assertEqual(result["action"], "REUSE")
+        self.assertIn("status-label bookkeeping failed", result["warning"])
+
+    def test_rerun_status_failure_preserves_authoritative_rerun(self):
+        patches = self.common_patches()
+        error = proof_broker.github_ops.GitHubError(
+            "PUT /repos/owner/repo/issues/23/labels: HTTP 403: forbidden"
+        )
+        run = {
+            "id": 19,
+            "status": "completed",
+            "conclusion": "failure",
+            "html_url": "https://example/run/19",
+        }
+        with patches[0], patches[1], patches[2], patches[8]:
+            with mock.patch.object(
+                proof_broker,
+                "find_existing_run",
+                return_value=run,
+            ):
+                with mock.patch.object(
+                    proof_broker,
+                    "set_status_label",
+                    side_effect=error,
+                ):
+                    with mock.patch.object(
+                        proof_broker,
+                        "rerun_workflow",
+                    ) as rerun:
+                        result = proof_broker.evaluate_proof(
+                            repo="owner/repo",
+                            token="token",
+                            policy=enabled_policy(),
+                            proof_id="geometry",
+                            pr_number=23,
+                            actor="owner",
+                            explicit=True,
+                            retry=True,
+                            status_only=False,
+                            apply=True,
+                        )
+
+        self.assertEqual(result["action"], "RERUN")
+        self.assertIn("status-label bookkeeping failed", result["warning"])
+        rerun.assert_called_once_with("owner/repo", "token", 19)
+
+    def test_deferred_status_failure_preserves_cost_governor_decision(self):
+        patches = self.common_patches()
+        error = proof_broker.github_ops.GitHubError(
+            "PUT /repos/owner/repo/issues/23/labels: HTTP 403: forbidden"
+        )
+        with patches[0], patches[1], patches[2], patches[3], patches[4]:
+            with mock.patch.object(
+                proof_broker,
+                "set_status_label",
+                side_effect=error,
+            ):
+                result = proof_broker.evaluate_proof(
+                    repo="owner/repo",
+                    token="token",
+                    policy=enabled_policy(
+                        automatic=True,
+                        merge_critical=False,
+                    ),
+                    proof_id="geometry",
+                    pr_number=23,
+                    actor=None,
+                    explicit=False,
+                    retry=False,
+                    status_only=False,
+                    apply=True,
+                )
+
+        self.assertEqual(result["action"], "DEFER")
+        self.assertIn("status-label bookkeeping failed", result["warning"])
+
+    def test_status_only_label_failure_preserves_discovered_state(self):
+        patches = self.common_patches()
+        error = proof_broker.github_ops.GitHubError(
+            "PUT /repos/owner/repo/issues/23/labels: HTTP 403: forbidden"
+        )
+        run = {
+            "id": 31,
+            "status": "in_progress",
+            "conclusion": None,
+            "html_url": "https://example/run/31",
+        }
+        with patches[0], patches[1], patches[2]:
+            with mock.patch.object(
+                proof_broker,
+                "find_existing_run",
+                return_value=run,
+            ):
+                with mock.patch.object(
+                    proof_broker,
+                    "set_status_label",
+                    side_effect=error,
+                ):
+                    result = proof_broker.evaluate_proof(
+                        repo="owner/repo",
+                        token="token",
+                        policy=enabled_policy(),
+                        proof_id="geometry",
+                        pr_number=23,
+                        actor="owner",
+                        explicit=True,
+                        retry=False,
+                        status_only=True,
+                        apply=True,
+                    )
+
+        self.assertEqual(result["action"], "ALREADY_RUNNING")
+        self.assertIn("status-label bookkeeping failed", result["warning"])
 
     def test_dispatch_api_failure_remains_blocking_before_status_bookkeeping(self):
         patches = self.common_patches()
