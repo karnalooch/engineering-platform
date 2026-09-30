@@ -160,6 +160,8 @@ def audit_repository(root: Path) -> dict[str, Any]:
             "agents": (root / "AGENTS.md").exists(),
             "docs_index": (root / "docs" / "README.md").exists(),
             "diagram_style": (root / "docs" / "DIAGRAM_STYLE.md").exists(),
+            "tooling_authority": (root / "docs" / "TOOLING_AUTHORITY.md").exists()
+            and (root / "tools" / "authority-policy.json").exists(),
             "repository_os_policy": (root / ".gumball" / "repository-os.json").exists(),
             "proof_broker_policy": (root / ".gumball" / "proof-broker.json").exists(),
             "dogfooding": (root / "docs" / "DOGFOODING.md").exists(),
@@ -180,6 +182,7 @@ def plan_repository(audit: dict[str, Any]) -> list[dict[str, str]]:
         ("agents", "AGENTS.md"),
         ("docs_index", "docs/README.md"),
         ("diagram_style", "docs/DIAGRAM_STYLE.md"),
+        ("tooling_authority", "docs/TOOLING_AUTHORITY.md + tools/authority-policy.json"),
         ("repository_os_policy", ".gumball/repository-os.json"),
         ("proof_broker_policy", ".gumball/proof-broker.json"),
     ):
@@ -218,6 +221,12 @@ def _gumball_self_problems(root: Path) -> list[str]:
         problems.append("docs/DOGFOODING.md is missing")
     if not (root / "tools" / "capabilities.yaml").is_file():
         problems.append("tools/capabilities.yaml is missing")
+    if not (root / "tools" / "authority-policy.json").is_file():
+        problems.append("tools/authority-policy.json is missing")
+    if not (root / "docs" / "TOOLING_AUTHORITY.md").is_file():
+        problems.append("docs/TOOLING_AUTHORITY.md is missing")
+    if not (root / "docs" / "VISUAL_ENGINEERING.md").is_file():
+        problems.append("docs/VISUAL_ENGINEERING.md is missing")
 
     version = (root / "VERSION").read_text(encoding="utf-8").strip()
     config_text = (root / "gumball.yaml").read_text(encoding="utf-8")
@@ -281,6 +290,7 @@ def _gumball_self_problems(root: Path) -> list[str]:
         "python scripts/gumball.py doctor",
         "python scripts/gumball.py promote",
         "python scripts/ci/check_docs_index.py",
+        "python scripts/ci/validate_tooling_authority.py",
         "python -m unittest scripts/ci/test_gumball.py -v",
         "python -m unittest scripts/ci/test_repository_os.py -v",
         "python -m unittest scripts/ci/test_github_ops.py -v",
@@ -305,6 +315,11 @@ def doctor_repository(root: Path) -> tuple[bool, list[tuple[str, str, str]]]:
     add("agent contract", contracts["agents"], "AGENTS.md")
     add("docs index", contracts["docs_index"], "docs/README.md")
     add("diagram style", contracts["diagram_style"], "docs/DIAGRAM_STYLE.md")
+    add(
+        "tooling authority",
+        contracts["tooling_authority"],
+        "docs/TOOLING_AUTHORITY.md + tools/authority-policy.json",
+    )
     add("repository OS policy", contracts["repository_os_policy"], ".gumball/repository-os.json")
     add("proof broker policy", contracts["proof_broker_policy"], ".gumball/proof-broker.json")
     add("workflow discovery", contracts["workflow_count"] > 0, f"{contracts['workflow_count']} workflow(s)")
@@ -345,6 +360,12 @@ ci:
 docs:
   index_required: true
   blueprint_diagram_style: required
+tooling:
+  authority: repository
+  admission_policy: proven-before-custom
+  authoritative_external_tool_return_path: deterministic-required
+  generated_artifact_freshness: content-or-digest
+  dev_editor_proof_shipping_default: excluded
 repository_os:
   policy: .gumball/repository-os.json
   lifecycle: required
@@ -372,6 +393,10 @@ def _generated_agents() -> str:
 - Keep the final Aggregate CI gate caller-local and fail closed.
 - Use immutable external Action/workflow references.
 - Treat heavy runtime, visual, emulator and hardware proof as explicit project/profile policy.
+- Review proven tooling/platform-native/proven OSS before inventing custom tooling.
+- Keep accepted tool output deterministic and repository-owned; SaaS-only state is research/convenience, not SSOT.
+- Keep dev/editor/proof tooling outside shipping artifacts by default and record exact provenance/lock evidence.
+- For visual profiles, prefer composition-first design and production-component workbenches with deterministic fixtures and asset-off inspection.
 - When Proof Broker is configured, request heavyweight proof through its exact-SHA label/comment contract; keep manual workflow_dispatch as fallback only.
 - Evaluate reusable CI, governance, security, docs, tooling, MCP and agent-workflow improvements for promotion back to Gumball.
 - Report validation as PASS, FAIL, BLOCKED or NOT RUN.
@@ -453,6 +478,8 @@ def apply_baseline(root: Path, profile: str, write: bool) -> list[tuple[str, str
         (root / "AGENTS.md", _generated_agents()),
         (root / "docs" / "README.md", _generated_docs_index()),
         (root / "docs" / "DIAGRAM_STYLE.md", _generated_diagram_style()),
+        (root / "docs" / "TOOLING_AUTHORITY.md", _source_file("docs/TOOLING_AUTHORITY.md")),
+        (root / "tools" / "authority-policy.json", _source_file("tools/authority-policy.json")),
         (root / "docs" / "PROOF_BROKER.md", _source_file("docs/PROOF_BROKER.md")),
         (root / ".gumball" / "repository-os.json", _generated_repository_os()),
         (root / ".gumball" / "proof-broker.json", _source_file(".gumball/proof-broker.json")),
@@ -465,6 +492,10 @@ def apply_baseline(root: Path, profile: str, write: bool) -> list[tuple[str, str
         (root / ".gumball" / "candidates" / "README.md",
          "# Gumball promotion candidates\n\nRecord reusable downstream engineering improvements here.\n"),
     ]
+    if profile in {"mobile", "unreal"}:
+        planned.append(
+            (root / "docs" / "VISUAL_ENGINEERING.md", _source_file("docs/VISUAL_ENGINEERING.md"))
+        )
 
     results: list[tuple[str, str]] = []
     for path, content in planned:
