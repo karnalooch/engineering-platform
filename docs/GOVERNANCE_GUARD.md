@@ -7,7 +7,7 @@ The governance guard is a reusable fail-closed workflow that protects process in
 On every caller repository it:
 
 - classifies pull requests from the actual changed paths;
-- requires the exact PR-body marker `Auto-merge: manual` when high-risk paths are touched;
+- requires the exact PR-body marker `Auto-merge: manual` for high-risk paths by default;
 - rejects mutable or otherwise non-immutable external GitHub Action/workflow refs;
 - rejects mutable `engineering-platform` consumer refs such as `@main`, `@master`, or a tag;
 - rejects consumers that mix multiple valid `engineering-platform` SHAs across active workflow calls;
@@ -15,7 +15,7 @@ On every caller repository it:
 - rejects workflow-level `permissions: write-all`;
 - requires a caller-local `Aggregate CI gate` whose own job block contains `if: ${{ always() }}`.
 
-The baseline checks cannot be disabled by caller inputs.
+The workflow-safety checks cannot be disabled by caller inputs. The PR-body marker requirement is caller-configurable; risk classification remains active.
 
 ## Default high-risk paths
 
@@ -59,6 +59,25 @@ app.config.js
 
 Consumers may add extra patterns through `additional_high_risk_patterns` for application-specific sensitive surfaces. The built-in defaults remain enforced and cannot be removed by a caller.
 
+### Consumer-owned marker policy
+
+An owner-approved consumer can remove the mandatory body marker with:
+
+```yaml
+with:
+  require_manual_merge_marker: false
+```
+
+The default is `true`, preserving existing consumers. Only an explicit `false`
+disables the body-text requirement. High-risk paths are still classified, and
+immutable refs, coherent platform pins, permissions, fail-open rejection and the
+caller-local aggregate boundary are still enforced. This input does not grant
+merge authorization or change the trusted auto-merge controller's eligibility
+rules. The owner/consumer owns authorization and required proof.
+
+YACS requested this policy after a formatting-only marker failure interrupted
+iteration on its verified build-cache repair (YACS Issue #355 / PR #356).
+
 ### Dependabot high-risk exception
 
 Consumers that use Dependabot for workflow or dependency-file maintenance may opt in to:
@@ -78,7 +97,7 @@ This input does **not** make Dependabot PRs eligible for auto-merge. Merge polic
 
 High-risk classification does not mean the change is bad. It means the change can alter the safety boundary, dependency graph, toolchain, release process, or CI result itself.
 
-A high-risk PR therefore needs:
+Under the default policy, a high-risk PR needs:
 
 ```text
 Auto-merge: manual
@@ -120,7 +139,7 @@ No governance/platform/security PR is auto-merged.
 
 The reusable Governance Guard and the repository-local privileged auto-merge controller are separate layers.
 
-- Governance classifies high-risk PRs and requires `Auto-merge: manual`.
+- Governance classifies high-risk PRs; its default policy requires `Auto-merge: manual`, while an explicit consumer policy may disable that body-text requirement.
 - The privileged controller runs only trusted code from the default branch and independently rejects its own high-risk path set.
 - A passing Governance check is necessary but never sufficient for auto-merge.
 - The controller also requires the local `Aggregate CI gate`, clean review state, a closing Issue and exact clean mergeability.

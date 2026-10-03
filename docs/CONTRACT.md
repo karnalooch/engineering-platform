@@ -46,14 +46,14 @@ The generic repository policy always enforces the maximum non-LFS blob size. Req
 The reusable governance guard protects process invariants that should not depend on memory:
 
 - high-risk PR path classification;
-- exact `Auto-merge: manual` requirement for high-risk changes;
+- high-risk `Auto-merge: manual` body marker by default, configurable with `require_manual_merge_marker`;
 - immutable external Action/workflow refs;
 - immutable engineering-platform consumer refs;
 - no `continue-on-error: true` fail-open workflow paths;
 - no workflow-level `permissions: write-all`;
 - preservation of a caller-local `Aggregate CI gate`.
 
-These baseline rules are intentionally non-disableable by consumer inputs. Consumers may only add application-specific high-risk path patterns.
+Workflow-safety checks are non-disableable by consumer inputs. Consumers may add application-specific high-risk path patterns and explicitly set `require_manual_merge_marker: false` to remove the body-text requirement. This does not change risk classification or grant merge authorization.
 
 See `docs/GOVERNANCE_GUARD.md` for the versioned policy.
 

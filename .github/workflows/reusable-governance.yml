@@ -3,6 +3,11 @@ name: Reusable governance guard
 on:
   workflow_call:
     inputs:
+      require_manual_merge_marker:
+        description: Require a manual-merge PR-body marker for high-risk paths. Consumer merge authorization remains caller-owned.
+        required: false
+        type: boolean
+        default: true
       additional_high_risk_patterns:
         description: Optional newline-separated glob patterns added to the built-in high-risk defaults.
         required: false
@@ -37,6 +42,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          REQUIRE_MANUAL_MERGE_MARKER: ${{ inputs.require_manual_merge_marker }}
           PR_BODY: ${{ github.event.pull_request.body || '' }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login || '' }}
           ALLOW_DEPENDABOT_HIGH_RISK_WITHOUT_MANUAL_MARKER: ${{ inputs.allow_dependabot_high_risk_without_manual_marker }}
@@ -224,7 +230,15 @@ jobs:
                           and pr_author == "dependabot[bot]"
                       )
 
-                      if dependabot_exception:
+                      require_marker = (
+                          os.environ.get("REQUIRE_MANUAL_MERGE_MARKER", "true").lower()
+                          != "false"
+                      )
+                      if not require_marker:
+                          notes.append(
+                              "high-risk manual marker disabled by explicit caller policy"
+                          )
+                      elif dependabot_exception:
                           notes.append(
                               "high-risk Dependabot PR: manual marker requirement "
                               "waived by explicit caller input"
